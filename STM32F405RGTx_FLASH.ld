@@ -79,6 +79,7 @@ SECTIONS
   /* The program code and other data goes into FLASH */
   .text :
   {
+	PROVIDE(stext = .);
     . = ALIGN(4);
     *(.text)           /* .text sections (code) */
     *(.text*)          /* .text* sections (code) */
@@ -128,6 +129,7 @@ SECTIONS
     KEEP (*(SORT(.fini_array.*)))
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
+	PROVIDE(etext = .);
   } >FLASH
 
   /* used by the startup to initialize data */
@@ -192,7 +194,9 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-  
+
+	/* define a global symbol at FLASH end */
+	PROVIDE( flash_used_size = SIZEOF(.isr_vector) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ARM.extab) + SIZEOF(.ARM) + SIZEOF(.preinit_array) + SIZEOF(.init_array) + SIZEOF(.fini_array) + SIZEOF(.data) + SIZEOF(.ccmram) );
 
   /* Remove information from the standard libraries */
   /DISCARD/ :
