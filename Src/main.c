@@ -481,13 +481,20 @@ void StartDefaultTask(void const * argument)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 5 */
+
 #if 0
+	//we must set the environment to at least a single empty string; this might
+	//be a bug in getenv(), but it defaults to a single NULL entry (which
+	//terminates the list), but will cause crashes in that situation.  This
+	//avoids the crashes.
+	extern char** environ;
+	static char const * const sl_env[] = { "", NULL };
+	environ = (char**)sl_env;
+
+	//make a fake command line
 	extern int lua_main (int argc, char **argv);
-	static const char* sl_argv[] = {
-	"lalalililulu",
-	NULL
-	};
-	lua_main (1, sl_argv);
+	static char const * const sl_argv[] = { "elua", NULL };
+	lua_main (1, (char**)sl_argv);
 #endif
 	/* Infinite loop */
 	for(;;)
