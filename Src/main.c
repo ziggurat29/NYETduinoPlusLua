@@ -55,6 +55,56 @@
 
 /* USER CODE BEGIN Includes */
 
+//#define ELUA_STUFF 1
+
+
+#if ELUA_STUFF
+//This stuff came out of eLua's main.c
+
+#include "platform.h"
+#include "romfs.h"
+#include "xmodem.h"
+#include "shell.h"
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
+#include "term.h"
+#include "platform_conf.h"
+#include "elua_rfs.h"
+
+// Validate eLua configuration options
+#include "validate.h"
+
+#include "mmcfs.h"
+#include "romfs.h"
+#include "semifs.h"
+
+// Define here your autorun/boot files,
+// in the order you want eLua to search for them
+const char *boot_order[] = {
+#if defined(BUILD_MMCFS)
+  "/mmc/autorun.lua",
+  "/mmc/autorun.lc",
+#endif
+#if defined(BUILD_WOFS)
+  "/wo/autorun.lua",
+  "/wo/autorun.lc",
+#endif
+#if defined(BUILD_ROMFS)
+  "/rom/autorun.lua",
+  "/rom/autorun.lc",
+#endif
+#if defined(BUILD_SEMIFS)
+  "/semi/autorun.lua",
+  "/semi/autorun.lc",
+#endif
+};
+
+extern char etext[];
+
+#endif
+
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -482,7 +532,7 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN 5 */
 
-#if 0
+#if ELUA_STUFF
 	//we must set the environment to at least a single empty string; this might
 	//be a bug in getenv(), but it defaults to a single NULL entry (which
 	//terminates the list), but will cause crashes in that situation.  This
@@ -491,10 +541,51 @@ void StartDefaultTask(void const * argument)
 	static char const * const sl_env[] = { "", NULL };
 	environ = (char**)sl_env;
 
-	//make a fake command line
-	extern int lua_main (int argc, char **argv);
-	static char const * const sl_argv[] = { "elua", NULL };
-	lua_main (1, (char**)sl_argv);
+	// Initialize device manager
+	dm_init();
+
+	// Register the ROM filesystem
+	romfs_init();
+
+	// Register the MMC filesystem
+	//mmcfs_init();
+
+	// Register the Semihosting filesystem
+	//semifs_init();
+
+	// Register the remote filesystem
+	//remotefs_init();
+#endif
+
+#if ELUA_STUFF
+	// Search for autorun files in the defined order and execute the 1st if found
+/*
+	int i;
+	FILE* fp;
+
+	for( i = 0; i < sizeof( boot_order ) / sizeof( *boot_order ); i++ )
+	{
+		if( ( fp = fopen( boot_order[ i ], "r" ) ) != NULL )
+		{
+			fclose( fp );
+			char* lua_argv[] = { (char *)"lua", (char *)boot_order[i], NULL };
+			lua_main( 2, lua_argv );
+			break; // autoruns only the first found
+		}
+	}
+*/
+
+	// Run the shell
+	if( shell_init() == 0 )
+	{
+		// Start Lua directly
+		//make a fake command line
+		static char const * const sl_argv[] = { "elua", NULL };
+		lua_main( 1, (char**)sl_argv );
+	}
+	else
+		shell_start();
+
 #endif
 	/* Infinite loop */
 	for(;;)
