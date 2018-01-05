@@ -55,7 +55,7 @@
 
 /* USER CODE BEGIN Includes */
 
-//#define ELUA_STUFF 1
+#define ELUA_STUFF 1
 
 
 #if ELUA_STUFF
