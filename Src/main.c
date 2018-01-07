@@ -119,7 +119,11 @@ RTC_DateTypeDef sDate;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi3;
 
+UART_HandleTypeDef huart6;
+
 osThreadId defaultTaskHandle;
+uint32_t defaultTaskBuffer[ 256 ];
+osStaticThreadDef_t defaultTaskControlBlock;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -134,6 +138,7 @@ static void MX_SPI1_Init(void);
 static void MX_SPI3_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_RTC_Init(void);
+static void MX_USART6_UART_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -175,6 +180,7 @@ int main(void)
   MX_SPI3_Init();
   MX_I2C1_Init();
   MX_RTC_Init();
+  MX_USART6_UART_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -194,7 +200,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256, defaultTaskBuffer, &defaultTaskControlBlock);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -405,6 +411,25 @@ static void MX_SPI3_Init(void)
 
 }
 
+/* USART6 init function */
+static void MX_USART6_UART_Init(void)
+{
+
+  huart6.Instance = USART6;
+  huart6.Init.BaudRate = 115200;
+  huart6.Init.WordLength = UART_WORDLENGTH_8B;
+  huart6.Init.StopBits = UART_STOPBITS_1;
+  huart6.Init.Parity = UART_PARITY_NONE;
+  huart6.Init.Mode = UART_MODE_TX_RX;
+  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart6) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /** Configure pins as 
         * Analog 
         * Input 
@@ -451,9 +476,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(SWITCH1_A_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : A0_Pin A1_Pin A2_Pin A3_Pin 
-                           A4_Pin A5_Pin D1_Pin D0_Pin */
+                           A4_Pin A5_Pin */
   GPIO_InitStruct.Pin = A0_Pin|A1_Pin|A2_Pin|A3_Pin 
-                          |A4_Pin|A5_Pin|D1_Pin|D0_Pin;
+                          |A4_Pin|A5_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -531,6 +556,9 @@ void StartDefaultTask(void const * argument)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 5 */
+	volatile UBaseType_t uxHighWaterMark;
+
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 
 #if ELUA_STUFF
 	//we must set the environment to at least a single empty string; this might
@@ -540,22 +568,33 @@ void StartDefaultTask(void const * argument)
 	extern char** environ;
 	static char const * const sl_env[] = { "", NULL };
 	environ = (char**)sl_env;
+	
+	// init platform from eLua's perspective
+	platform_init();
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 
 	// Initialize device manager
 	dm_init();
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 
 	// Register the ROM filesystem
 	romfs_init();
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 
 	// Register the MMC filesystem
 	//mmcfs_init();
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 
 	// Register the Semihosting filesystem
 	//semifs_init();
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 
 	// Register the remote filesystem
 	//remotefs_init();
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 #endif
+
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 
 #if ELUA_STUFF
 	// Search for autorun files in the defined order and execute the 1st if found
@@ -581,13 +620,18 @@ void StartDefaultTask(void const * argument)
 		// Start Lua directly
 		//make a fake command line
 		static char const * const sl_argv[] = { "elua", NULL };
+		uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 		lua_main( 1, (char**)sl_argv );
 	}
 	else
+	{
+		uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 		shell_start();
+	}
 
 #endif
 	/* Infinite loop */
+	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 	for(;;)
 	{
 		osDelay(1);
@@ -612,7 +656,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
 /* USER CODE BEGIN Callback 1 */
-
+	//XXX the other timer switches would go here
 /* USER CODE END Callback 1 */
 }
 

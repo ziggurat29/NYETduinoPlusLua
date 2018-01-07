@@ -11,10 +11,59 @@
 
 // Platform-specific headers
 #include "stm32f4xx.h"
+#include "stm32f4xx_hal.h"
+#include "cmsis_os.h"
+
+#define I_BIT                   0x80
+#define F_BIT                   0x40
+#define INTERRUPT_MASK_BIT      ( I_BIT )
+// Define next constant as 0 if the interrupt flag is active on logic 0, or as INTERRUPT_MASK_BIT otherwise
+#define INTERRUPT_ACTIVE        ( 0 )
+
+
 
 #ifndef VTMR_TIMER_ID
 #define VTMR_TIMER_ID         ( -1 )
 #endif
+
+
+int platform_cpu_set_global_interrupts( int status )
+{
+	volatile register uint32_t crt_status asm ("r5");
+	__asm volatile
+	(
+		"mrs       r5, PRIMASK \n"
+	);
+	
+	if( status == PLATFORM_CPU_ENABLE )
+	{
+		__asm volatile
+		(
+			"cpsie   i \n"
+		);
+	}
+	else
+	{
+		__asm volatile
+		(
+			"cpsid   i \n"
+		);
+	}
+	return ( crt_status & INTERRUPT_MASK_BIT ) == INTERRUPT_ACTIVE;
+}
+
+
+int platform_cpu_get_global_interrupts( void )
+{
+	volatile register uint32_t crt_status asm ("r5");
+	__asm volatile
+	(
+		"mrs       r5, PRIMASK \n"
+	);
+	return ( crt_status & INTERRUPT_MASK_BIT ) == INTERRUPT_ACTIVE;
+}
+
+
 
 // ****************************************************************************
 // Interrupt handlers

@@ -9,47 +9,33 @@
 // Configuration for element 'romfs'
 #define BUILD_ROMFS
 
-// Configuration for element 'adc'
-#define ADC_BUF_SIZE                     1
-#define BUILD_ADC
-
-// Configuration for element 'advanced_shell'
-#define BUILD_ADVANCED_SHELL
-
-// Configuration for element 'cints'
-#define BUILD_C_INT_HANDLERS
-
 // Configuration for element 'sercon'
 #define CON_FLOW_TYPE                    PLATFORM_UART_FLOW_NONE
 #define CON_UART_SPEED                   115200
+#define CON_BUF_SIZE                     7
 #define CON_TIMER_ID                     PLATFORM_TIMER_SYS_ID
-#define CON_UART_ID                      CDC_UART_ID
+#define CON_UART_ID                      0
 #define BUILD_CON_GENERIC
-
-// Configuration for element 'xmodem'
-#define BUILD_XMODEM
-
-// Configuration for element 'wofs'
-#define BUILD_WOFS
 
 // Configuration for element 'luaints'
 #define PLATFORM_INT_QUEUE_LOG_SIZE      5
 #define BUILD_LUA_INT_HANDLERS
 
-// Configuration for element 'cdc'
-#define CDC_BUF_SIZE                     7
-#define BUILD_USB_CDC
+// Configuration for element 'advanced_shell'
+#define BUILD_ADVANCED_SHELL
 
 // Configuration for element 'term'
 #define TERM_LINES                       25
 #define TERM_COLS                        80
 #define BUILD_TERM
 
-// Configuration for element 'rpc'
-#define RPC_UART_SPEED                   115200
-#define RPC_TIMER_ID                     PLATFORM_TIMER_SYS_ID
-#define RPC_UART_ID                      1
-#define BUILD_RPC
+// Configuration for element 'cints'
+#define BUILD_C_INT_HANDLERS
+
+// Configuration for element 'linenoise'
+#define LINENOISE_HISTORY_SIZE_LUA       50
+#define LINENOISE_HISTORY_SIZE_SHELL     10
+#define BUILD_LINENOISE
 
 // Configuration for element 'shell'
 #define BUILD_SHELL

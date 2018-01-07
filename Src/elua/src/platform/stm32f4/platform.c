@@ -1,3 +1,5 @@
+
+
 // Platform-dependent functions
 
 #include "platform.h"
@@ -22,11 +24,12 @@
 #include "lauxlib.h"
 #include "lrotable.h"
 
+// Platform specific includes
+#include "stm32f4xx_hal.h"
+#include "cmsis_os.h"
+
 //HHH
 /*
-// Platform specific includes
-#include "stm32f4xx_conf.h"
-#include "pll_config.h"
 #ifdef BUILD_USB_CDC
 #include "usbd_cdc_core.h"
 #include "usbd_usr.h"
@@ -66,32 +69,29 @@
 // Platform initialization
 
 // forward dcls
-static void NVIC_Configuration(void);
+//static void NVIC_Configuration(void);
 
 #ifdef BUILD_USB_CDC
-//HHH
-/*
-__ALIGN_BEGIN USB_OTG_CORE_HANDLE    USB_OTG_dev __ALIGN_END ;
-*/
+//__ALIGN_BEGIN USB_OTG_CORE_HANDLE    USB_OTG_dev __ALIGN_END ;
 #endif
 
-static void timers_init();
-static void pwms_init();
-static void uarts_init();
-static void spis_init();
-static void pios_init();
+//static void timers_init();
+//static void pwms_init();
+//static void uarts_init();
+//static void spis_init();
+//static void pios_init();
 #ifdef BUILD_ADC
-static void adcs_init();
+//static void adcs_init();
 #endif
 #if (NUM_CAN > 0)
-static void cans_init();
+//static void cans_init();
 #endif
 
 
-//HHH
-/*
 int platform_init()
 {
+//HHH
+/*
   // Setup IRQ's
   NVIC_Configuration();
 
@@ -157,12 +157,18 @@ int platform_init()
     DCD_DevConnect( &USB_OTG_dev );
 #endif
 
-  cmn_platform_init();
-
-  // All done
-  return PLATFORM_OK;
-}
 */
+
+
+  // Setup system timer
+//cmn_systimer_set_base_freq( HCLK );
+//cmn_systimer_set_interrupt_freq( SYSTICKHZ );
+
+	cmn_platform_init();
+
+	// All done
+	return PLATFORM_OK;
+}
 
 // ****************************************************************************
 // NVIC
@@ -501,7 +507,10 @@ const u8 stm32_usart_AF[] =       { GPIO_AF_USART1, GPIO_AF_USART2, GPIO_AF_USAR
 static GPIO_TypeDef *const usart_gpio_hwflow_port[] = { GPIOA, GPIOA, GPIOB };
 static const u16 usart_gpio_cts_pin[] = { GPIO_Pin_11, GPIO_Pin_0, GPIO_Pin_13 };
 static const u16 usart_gpio_rts_pin[] = { GPIO_Pin_12, GPIO_Pin_1, GPIO_Pin_14 };
+*/
 
+
+/*
 static void usart_init(u32 id, USART_InitTypeDef * initVals)
 {
   /* Configure USART IO * /
@@ -565,6 +574,15 @@ static void uarts_init()
 }
 */
 
+
+
+extern UART_HandleTypeDef huart6;	//COM1, id 0
+extern UART_HandleTypeDef huart2;	//COM2, id 1
+extern UART_HandleTypeDef huart4;	//COM3, id 2
+extern UART_HandleTypeDef huart1;	//COM4, id 3
+
+
+
 u32 platform_uart_setup( unsigned id, u32 baud, int databits, int parity, int stopbits )
 {
 //HHH
@@ -623,7 +641,7 @@ u32 platform_uart_setup( unsigned id, u32 baud, int databits, int parity, int st
   usart_init(id, &USART_InitStructure);
 
   return baud;
-*/ return 0;
+*/ return baud;
 }
 
 extern uint16_t VCP_DataTx(uint8_t* Buf, uint32_t Len);
@@ -641,6 +659,9 @@ void platform_s_uart_send( unsigned id, u8 data )
     USART_SendData(stm32_usart[id], data);
   }
 */
+
+	//XXX no-brainer blocking mode for initial attempt
+	HAL_StatusTypeDef hret = HAL_UART_Transmit ( &huart6, &data, 1, 1000 );
 }
 
 int platform_s_uart_recv( unsigned id, timer_data_type timeout )
@@ -659,7 +680,12 @@ int platform_s_uart_recv( unsigned id, timer_data_type timeout )
   // Receive char blocking
   while(USART_GetFlagStatus(stm32_usart[id], USART_FLAG_RXNE) == RESET);
   return USART_ReceiveData(stm32_usart[id]);
-*/ return 0;
+*/
+
+	//XXX no-brainer blocking mode for initial attempt
+	uint8_t RxData;
+	HAL_StatusTypeDef hret = HAL_UART_Receive ( &huart6, &RxData, 1, 1000 );
+	return RxData;
 }
 
 int platform_s_uart_set_flow_control( unsigned id, int type )
@@ -1514,11 +1540,7 @@ void platform_pwm_stop( unsigned id )
 extern u32 SystemCoreClock;
 u32 platform_s_cpu_get_frequency()
 {
-//HHH
-/*
-  SystemCoreClockUpdate();
-  return SystemCoreClock;
-*/
+	return HAL_RCC_GetSysClockFreq();
 }
 
 //HHH
