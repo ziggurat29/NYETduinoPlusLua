@@ -683,9 +683,13 @@ int platform_s_uart_recv( unsigned id, timer_data_type timeout )
 */
 
 	//XXX no-brainer blocking mode for initial attempt
+	uint32_t Timeout = PLATFORM_TIMER_INF_TIMEOUT == timeout ? 0xffff : timeout;
+
 	uint8_t RxData;
-	HAL_StatusTypeDef hret = HAL_UART_Receive ( &huart6, &RxData, 1, 1000 );
-	return RxData;
+	HAL_StatusTypeDef hret = HAL_UART_Receive ( &huart6, &RxData, 1, Timeout );
+	if ( HAL_OK == hret )
+		return RxData;
+	return -1;
 }
 
 int platform_s_uart_set_flow_control( unsigned id, int type )

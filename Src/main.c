@@ -55,6 +55,21 @@
 
 /* USER CODE BEGIN Includes */
 
+//we define our heap (to be used by FreeRTOS heap_4.c implementation) to be
+//exactly where we want it to be.
+//uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
+/*
+void* malloc ( size_t size )
+{
+	return pvPortMalloc ( size );
+}
+void free ( void* pv )
+{
+	vPortFree ( pv );
+}
+*/
+
+
 #define ELUA_STUFF 1
 
 
@@ -556,9 +571,17 @@ void StartDefaultTask(void const * argument)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 5 */
-	volatile UBaseType_t uxHighWaterMark;
+	volatile UBaseType_t uxMaxUsedStack;
+	volatile UBaseType_t uxMinFreeHeap;
 
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+	//dummy alloc to cause FreeRTOS to initialize heap
+	uint8_t* pvDummy = (uint8_t*) malloc ( 10 );
+	memset ( pvDummy, 0xa5, 10 );
+
+	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
+	uxMinFreeHeap = 0;//xPortGetMinimumEverFreeHeapSize();
+
+	free ( pvDummy );
 
 #if ELUA_STUFF
 	//we must set the environment to at least a single empty string; this might
@@ -571,30 +594,30 @@ void StartDefaultTask(void const * argument)
 	
 	// init platform from eLua's perspective
 	platform_init();
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
 
 	// Initialize device manager
 	dm_init();
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
 
 	// Register the ROM filesystem
 	romfs_init();
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
 
 	// Register the MMC filesystem
 	//mmcfs_init();
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
 
 	// Register the Semihosting filesystem
 	//semifs_init();
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
 
 	// Register the remote filesystem
 	//remotefs_init();
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
 #endif
 
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
 
 #if ELUA_STUFF
 	// Search for autorun files in the defined order and execute the 1st if found
@@ -620,18 +643,19 @@ void StartDefaultTask(void const * argument)
 		// Start Lua directly
 		//make a fake command line
 		static char const * const sl_argv[] = { "elua", NULL };
-		uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+		uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
 		lua_main( 1, (char**)sl_argv );
 	}
 	else
 	{
-		uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+		uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
 		shell_start();
 	}
 
 #endif
 	/* Infinite loop */
-	uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
+	uxMinFreeHeap = 0;//xPortGetMinimumEverFreeHeapSize();
 	for(;;)
 	{
 		osDelay(1);

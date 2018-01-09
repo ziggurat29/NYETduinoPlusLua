@@ -67,7 +67,7 @@ int platform_cpu_get_global_interrupts( void )
 
 // ****************************************************************************
 // Interrupt handlers
-
+/*HHH
 extern USART_TypeDef *const stm32_usart[];
 
 static void all_usart_irqhandler( int resnum )
@@ -75,7 +75,7 @@ static void all_usart_irqhandler( int resnum )
   //int temp;
 
   //temp = USART_GetFlagStatus( stm32_usart[ resnum ], USART_FLAG_ORE );
-  cmn_int_handler( INT_UART_RX, resnum );
+  //cmn_int_handler( INT_UART_RX, resnum );
   // if( temp == SET )
   //   for( temp = 0; temp < 10; temp ++ )
   //     platform_s_uart_send( resnum, '@' );
@@ -105,7 +105,7 @@ void UART5_IRQHandler()
 {
   all_usart_irqhandler( 4 );
 }
-
+*/
 // ****************************************************************************
 // External interrupt handlers
 
