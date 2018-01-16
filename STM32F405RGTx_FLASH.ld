@@ -54,7 +54,8 @@ ENTRY(Reset_Handler)
 /* XXX I changed _Min_Heap_Size to require a 0k heap because FreeRTOS is managing our heap and declares a static RAM buffer for it already */
 /* XXX I changed _Min_Stack_Size because that stack is used only briefly at startup prior to starting FreeRTOS XXX see how to recover that memory usefully */
 /* Highest address of the user mode stack */
-_estack = 0x20010000;    /* end of RAM */
+/*_estack = 0x20010000;    /* end of RAM */
+_estack = 0x20020000;    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
 _Min_Stack_Size = 0x400; /* required amount of stack */
@@ -62,7 +63,8 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 /* Specify the memory areas */
 MEMORY
 {
-RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 64K
+RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 128K
+/* RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 64K */
 CCMRAM (rw)      : ORIGIN = 0x10000000, LENGTH = 64K
 FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 1024K
 }

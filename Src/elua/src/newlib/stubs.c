@@ -420,7 +420,7 @@ int __ssvfscanf_r( struct _reent *r, FILE *stream, const char *format, va_list a
 // Allocator support
 
 // _sbrk_r (newlib) / elua_sbrk (multiple)
-static char *heap_ptr; 
+/*HHHstatic*/ char *heap_ptr;
 static int mem_index;
 
 #ifdef USE_MULTIPLE_ALLOCATOR
@@ -441,6 +441,10 @@ void* _sbrk_r( struct _reent* r, ptrdiff_t incr )
   {
     if( heap_ptr == NULL )  
     {
+//HHH 
+void* pvBegin = platform_get_first_free_ram( mem_index );
+void* pvEnd = platform_get_last_free_ram( mem_index );
+memset ( pvBegin, 0xfd, pvEnd - pvBegin );
       if( ( heap_ptr = ( char* )platform_get_first_free_ram( mem_index ) ) == NULL )
       {
         ptr = ( void* )-1;

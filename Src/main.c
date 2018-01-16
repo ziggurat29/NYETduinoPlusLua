@@ -55,19 +55,26 @@
 
 /* USER CODE BEGIN Includes */
 
+#if configAPPLICATION_ALLOCATED_HEAP
 //we define our heap (to be used by FreeRTOS heap_4.c implementation) to be
 //exactly where we want it to be.
-//uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
-/*
-void* malloc ( size_t size )
+__attribute__((aligned(8))) uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
+#endif
+extern void* pvPortRealloc( void* pvOrig, size_t xWantedSize );
+
+void* __wrap_malloc ( size_t size )
 {
 	return pvPortMalloc ( size );
 }
-void free ( void* pv )
+void __wrap_free ( void* pv )
 {
 	vPortFree ( pv );
 }
-*/
+void __wrap_realloc ( void* pv, size_t size )
+{
+	return vPortRealloc ( pv, size );
+}
+
 
 
 #define ELUA_STUFF 1
@@ -137,7 +144,7 @@ SPI_HandleTypeDef hspi3;
 UART_HandleTypeDef huart6;
 
 osThreadId defaultTaskHandle;
-uint32_t defaultTaskBuffer[ 256 ];
+uint32_t defaultTaskBuffer[ 1024 ];
 osStaticThreadDef_t defaultTaskControlBlock;
 
 /* USER CODE BEGIN PV */
@@ -169,7 +176,77 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	{
+		/*
+		void* pvMem001 = pvPortMalloc( 10 );
+		void* pvMem002 = pvPortMalloc( 10 );
+		vPortFree( pvMem001 );
+		vPortFree( pvMem002 );
+		*/
 
+		/*
+		void* pvMem001 = pvPortRealloc( NULL, 10 );
+		void* pvMem002 = pvPortRealloc( pvMem001, 20 );
+		pvPortRealloc( pvMem002, 0 );
+		*/
+
+		volatile size_t nHeapFree = xPortGetFreeHeapSize();
+		//alloc
+		volatile void* pvMem001 = pvPortRealloc( NULL, 10 );
+		nHeapFree = xPortGetFreeHeapSize();
+		//free
+		pvMem001 = pvPortRealloc( pvMem001, 0 );
+		nHeapFree = xPortGetFreeHeapSize();
+
+		//realloc same size
+		pvMem001 = pvPortRealloc( NULL, 10 );		//will use 3 8by blocks (hdr + 2 blk)
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem001 = pvPortRealloc( pvMem001, 16 );	//on the threshold @ 8 by alignment
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem001 = pvPortRealloc( pvMem001, 0 );	//free
+		nHeapFree = xPortGetFreeHeapSize();
+
+		//realloc reduce size
+		pvMem001 = pvPortRealloc( NULL, 17 );		//will use 4 8by blocks (hdr + 3 blk)
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem001 = pvPortRealloc( pvMem001, 16 );	//will use 3 8by blocks (hdr + 2 blk)
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem001 = pvPortRealloc( pvMem001, 0 );	//free
+		nHeapFree = xPortGetFreeHeapSize();
+
+		//realloc increase size in situ
+		pvMem001 = pvPortRealloc( NULL, 16 );		//will use 3 8by blocks (hdr + 2 blk)
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem001 = pvPortRealloc( pvMem001, 17 );	//will use 4 8by blocks (hdr + 3 blk)
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem001 = pvPortRealloc( pvMem001, 0 );	//free
+		nHeapFree = xPortGetFreeHeapSize();
+
+		//realloc increase size realloc
+		pvMem001 = pvPortRealloc( NULL, 16 );		//will use 3 8by blocks (hdr + 2 blk)
+		nHeapFree = xPortGetFreeHeapSize();
+		volatile void* pvMem002 = pvPortMalloc( 10 );	//interceding block
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem001 = pvPortRealloc( pvMem001, 17 );	//will use 4 8by blocks (hdr + 3 blk)
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem001 = pvPortRealloc( pvMem001, 0 );	//free
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem002 = pvPortRealloc( pvMem002, 0 );	//free
+		nHeapFree = xPortGetFreeHeapSize();
+
+		//realloc increase size fail
+		pvMem001 = pvPortRealloc( NULL, 16 );		//will use 3 8by blocks (hdr + 2 blk)
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem002 = pvPortRealloc( pvMem001, 2048 );	//will use too much
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem002 = pvPortRealloc( pvMem001, 2032 );	//will use it all
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem001 = pvMem002;
+		pvMem002 = pvPortRealloc( pvMem001, 2048 );	//will use too much at the end block
+		nHeapFree = xPortGetFreeHeapSize();
+		pvMem001 = pvPortRealloc( pvMem001, 0 );	//free
+		nHeapFree = xPortGetFreeHeapSize();
+	}
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -199,6 +276,41 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
+#if ELUA_STUFF
+{
+	//dummy alloc to cause FreeRTOS to initialize heap
+	uint8_t* pvDummy = (uint8_t*) malloc ( 10 );
+	memset ( pvDummy, 0xa5, 10 );
+	free ( pvDummy );
+
+	//we must set the environment to at least a single empty string; this might
+	//be a bug in getenv(), but it defaults to a single NULL entry (which
+	//terminates the list), but will cause crashes in that situation.  This
+	//avoids the crashes.
+	extern char** environ;
+	static char const * const sl_env[] = { "", NULL };
+	environ = (char**)sl_env;
+	
+	// init platform from eLua's perspective
+	platform_init();
+
+	// Initialize device manager
+	dm_init();
+
+	// Register the ROM filesystem
+	romfs_init();
+
+	// Register the MMC filesystem
+	//mmcfs_init();
+
+	// Register the Semihosting filesystem
+	//semifs_init();
+
+	// Register the remote filesystem
+	//remotefs_init();
+}
+#endif
+
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -215,7 +327,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256, defaultTaskBuffer, &defaultTaskControlBlock);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 1024, defaultTaskBuffer, &defaultTaskControlBlock);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -571,53 +683,13 @@ void StartDefaultTask(void const * argument)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 5 */
-	volatile UBaseType_t uxMaxUsedStack;
+	volatile UBaseType_t uxMinFreeStack;
+	volatile UBaseType_t uxMaxSizeHeap;
+	volatile UBaseType_t uxMaxUsedHeap;
 	volatile UBaseType_t uxMinFreeHeap;
 
-	//dummy alloc to cause FreeRTOS to initialize heap
-	uint8_t* pvDummy = (uint8_t*) malloc ( 10 );
-	memset ( pvDummy, 0xa5, 10 );
-
-	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
-	uxMinFreeHeap = 0;//xPortGetMinimumEverFreeHeapSize();
-
-	free ( pvDummy );
-
-#if ELUA_STUFF
-	//we must set the environment to at least a single empty string; this might
-	//be a bug in getenv(), but it defaults to a single NULL entry (which
-	//terminates the list), but will cause crashes in that situation.  This
-	//avoids the crashes.
-	extern char** environ;
-	static char const * const sl_env[] = { "", NULL };
-	environ = (char**)sl_env;
-	
-	// init platform from eLua's perspective
-	platform_init();
-	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
-
-	// Initialize device manager
-	dm_init();
-	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
-
-	// Register the ROM filesystem
-	romfs_init();
-	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
-
-	// Register the MMC filesystem
-	//mmcfs_init();
-	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
-
-	// Register the Semihosting filesystem
-	//semifs_init();
-	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
-
-	// Register the remote filesystem
-	//remotefs_init();
-	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
-#endif
-
-	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
+	uxMinFreeStack = uxTaskGetStackHighWaterMark( NULL );
+	uxMaxSizeHeap = (char*)platform_get_last_free_ram( 0 ) - (char*)platform_get_first_free_ram( 0 );
 
 #if ELUA_STUFF
 	// Search for autorun files in the defined order and execute the 1st if found
@@ -643,19 +715,27 @@ void StartDefaultTask(void const * argument)
 		// Start Lua directly
 		//make a fake command line
 		static char const * const sl_argv[] = { "elua", NULL };
-		uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
+		uxMinFreeStack = uxTaskGetStackHighWaterMark( NULL );
 		lua_main( 1, (char**)sl_argv );
 	}
 	else
 	{
-		uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
+		uxMinFreeStack = uxTaskGetStackHighWaterMark( NULL );
 		shell_start();
 	}
 
 #endif
 	/* Infinite loop */
-	uxMaxUsedStack = uxTaskGetStackHighWaterMark( NULL );
-	uxMinFreeHeap = 0;//xPortGetMinimumEverFreeHeapSize();
+	uxMinFreeStack = uxTaskGetStackHighWaterMark( NULL );
+	//uxMinFreeHeap = xPortGetMinimumEverFreeHeapSize();
+extern char* heap_ptr;
+uxMaxUsedHeap = heap_ptr - (char*)platform_get_first_free_ram( 0 );
+uxMinFreeHeap = (char*)platform_get_last_free_ram( 0 ) - heap_ptr;
+
+printf ( "minfreestack: %lu, maxheapused: %lu of %lu (minfree %lu)\n",
+		uxMinFreeStack, uxMaxUsedHeap, uxMaxSizeHeap, uxMinFreeHeap );
+printf ( "resetting...\n" );
+NVIC_SystemReset();
 	for(;;)
 	{
 		osDelay(1);

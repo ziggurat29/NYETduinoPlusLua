@@ -268,7 +268,7 @@ void prvGetRegistersFromStack( uint32_t* pulFaultStackAddress )
 		"mov sp, r1 \n"	//swap stack for magic
 		: //(no outputs)
 		: //(no inputs)
-		: "r0", "r1"
+		: "r0"
 	);
 
 	//When the following line is hit, the variables contain the register values.
