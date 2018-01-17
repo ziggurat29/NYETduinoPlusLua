@@ -172,13 +172,16 @@ standard names. */
 //I'm not yet sure if/why this is needed, but it apparently is to support newlib in some way
 #define configUSE_NEWLIB_REENTRANT 1
 
+//have some more tracing functions
+#define configUSE_TRACE_FACILITY 1
+
 //override memory selection made in STM32CubeMX, and explicitly support
 //FreeRTOS dynamic memory management.  However, we will be providing our own
 //heap implementation (derived from heap4.c, but with realloc implemented)
 #undef configSUPPORT_DYNAMIC_ALLOCATION
 #define configSUPPORT_DYNAMIC_ALLOCATION 1
 #undef configTOTAL_HEAP_SIZE
-#define configTOTAL_HEAP_SIZE 2048
+#define configTOTAL_HEAP_SIZE 65536
 #undef configAPPLICATION_ALLOCATED_HEAP
 #define configAPPLICATION_ALLOCATED_HEAP 1
 

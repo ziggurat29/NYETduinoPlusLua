@@ -55,26 +55,53 @@
 
 /* USER CODE BEGIN Includes */
 
+//This controls whether we use the FreeRTOS heap implementation to also provide
+//the libc malloc() and friends.  Note, if you turn this off, you will want to
+//adjust _Min_Heap_Size in the linker script, because it is set to a very low
+//value.
+#define USE_FREERTOS_HEAP_IMPL 1
+
+
+#if USE_FREERTOS_HEAP_IMPL
+
 #if configAPPLICATION_ALLOCATED_HEAP
 //we define our heap (to be used by FreeRTOS heap_4.c implementation) to be
 //exactly where we want it to be.
-__attribute__((aligned(8))) uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
+//__attribute__((aligned(8))) 
+uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 #endif
+//we implemented a 'realloc' for a heap_4 derived implementation
 extern void* pvPortRealloc( void* pvOrig, size_t xWantedSize );
+//we implemented a 'heapwalk' function
+typedef int (*CBK_HEAPWALK) ( void* pblk, uint32_t nBlkSize, int bIsFree );
+extern int vPortHeapWalk ( CBK_HEAPWALK pfnWalk );
 
-void* __wrap_malloc ( size_t size )
+//'wrapped functions' for library interpositioning
+//you must specify these gcc (linker-directed) options to cause the wrappers'
+//delights to be generated:
+
+//-Wl,--wrap,malloc  -Wl,--wrap,free  -Wl,--wrap,realloc  -Wl,--wrap,calloc
+//-Wl,--wrap,_malloc_r  -Wl,--wrap,_free_r  -Wl,--wrap,_realloc_r  -Wl,--wrap,_calloc_r
+
+//hmm; can I declare these 'inline' and save a little code and stack?
+void* __wrap_malloc ( size_t size ) { return pvPortMalloc ( size ); }
+void __wrap_free ( void* pv ) { vPortFree ( pv ); }
+void* __wrap_realloc ( void* pv, size_t size ) { return pvPortRealloc ( pv, size ); }
+
+void* __wrap__malloc_r ( struct _reent* r, size_t size ) { return pvPortMalloc ( size ); }
+void __wrap__free_r ( struct _reent* r, void* pv ) { vPortFree ( pv ); }
+void* __wrap__realloc_r ( struct _reent* r, void* pv, size_t size ) { return pvPortRealloc ( pv, size ); }
+
+
+
+//XXX heapwalker callback for testing
+int cbkHeapWalk ( void* pblk, uint32_t nBlkSize, int bIsFree )
 {
-	return pvPortMalloc ( size );
-}
-void __wrap_free ( void* pv )
-{
-	vPortFree ( pv );
-}
-void __wrap_realloc ( void* pv, size_t size )
-{
-	return vPortRealloc ( pv, size );
+	volatile int i = 0;
+	return 1;
 }
 
+#endif
 
 
 #define ELUA_STUFF 1
@@ -190,6 +217,7 @@ int main(void)
 		pvPortRealloc( pvMem002, 0 );
 		*/
 
+		/*
 		volatile size_t nHeapFree = xPortGetFreeHeapSize();
 		//alloc
 		volatile void* pvMem001 = pvPortRealloc( NULL, 10 );
@@ -246,6 +274,38 @@ int main(void)
 		nHeapFree = xPortGetFreeHeapSize();
 		pvMem001 = pvPortRealloc( pvMem001, 0 );	//free
 		nHeapFree = xPortGetFreeHeapSize();
+		*/
+		
+		/*
+		volatile int nVal = sizeof(struct _reent);
+		++nVal;
+		--nVal;
+		*/
+		
+		/*
+		//make chunks
+		volatile void* pvMem000 = pvPortRealloc( NULL, 10 );
+		volatile void* pvMem001 = pvPortRealloc( NULL, 10 );	//will be hole
+		volatile void* pvMem002 = pvPortRealloc( NULL, 10 );
+		volatile void* pvMem003 = pvPortRealloc( NULL, 10 );
+		volatile void* pvMem004 = pvPortRealloc( NULL, 10 );	//will be hole
+		volatile void* pvMem005 = pvPortRealloc( NULL, 10 );
+		volatile void* pvMem006 = pvPortRealloc( NULL, 10 );
+		
+		//make holes
+		vPortFree ( pvMem001 );
+		vPortFree ( pvMem004 );
+
+		//heapwalk
+		vPortHeapWalk ( cbkHeapWalk );
+		
+		//release other stuff
+		vPortFree ( pvMem000 );
+		vPortFree ( pvMem002 );
+		vPortFree ( pvMem003 );
+		vPortFree ( pvMem005 );
+		vPortFree ( pvMem006 );
+		*/
 	}
   /* USER CODE END 1 */
 
@@ -279,9 +339,9 @@ int main(void)
 #if ELUA_STUFF
 {
 	//dummy alloc to cause FreeRTOS to initialize heap
-	uint8_t* pvDummy = (uint8_t*) malloc ( 10 );
+	volatile uint8_t* pvDummy = (uint8_t*) malloc ( 10 );
 	memset ( pvDummy, 0xa5, 10 );
-	free ( pvDummy );
+	free ( (void*)pvDummy );
 
 	//we must set the environment to at least a single empty string; this might
 	//be a bug in getenv(), but it defaults to a single NULL entry (which
@@ -346,13 +406,13 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	NVIC_SystemReset();	//not supposed to be here!
+//  while (1)
+//  {
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-
-  }
+//  }
   /* USER CODE END 3 */
 
 }
@@ -689,7 +749,12 @@ void StartDefaultTask(void const * argument)
 	volatile UBaseType_t uxMinFreeHeap;
 
 	uxMinFreeStack = uxTaskGetStackHighWaterMark( NULL );
+#if USE_FREERTOS_HEAP_IMPL
+	uxMaxSizeHeap = configTOTAL_HEAP_SIZE;
+	uxMinFreeHeap = xPortGetMinimumEverFreeHeapSize();
+#else
 	uxMaxSizeHeap = (char*)platform_get_last_free_ram( 0 ) - (char*)platform_get_first_free_ram( 0 );
+#endif
 
 #if ELUA_STUFF
 	// Search for autorun files in the defined order and execute the 1st if found
@@ -727,12 +792,16 @@ void StartDefaultTask(void const * argument)
 #endif
 	/* Infinite loop */
 	uxMinFreeStack = uxTaskGetStackHighWaterMark( NULL );
-	//uxMinFreeHeap = xPortGetMinimumEverFreeHeapSize();
-extern char* heap_ptr;
-uxMaxUsedHeap = heap_ptr - (char*)platform_get_first_free_ram( 0 );
-uxMinFreeHeap = (char*)platform_get_last_free_ram( 0 ) - heap_ptr;
+#if USE_FREERTOS_HEAP_IMPL
+	uxMinFreeHeap = xPortGetMinimumEverFreeHeapSize();
+	uxMaxUsedHeap = uxMaxSizeHeap - uxMinFreeHeap;
+#else
+	extern char* heap_ptr;
+	uxMaxUsedHeap = heap_ptr - (char*)platform_get_first_free_ram( 0 );
+	uxMinFreeHeap = (char*)platform_get_last_free_ram( 0 ) - heap_ptr;
+#endif
 
-printf ( "minfreestack: %lu, maxheapused: %lu of %lu (minfree %lu)\n",
+printf ( "minfreestack: %lu words; maxheapused: %lu of %lu (minfree %lu)\n",
 		uxMinFreeStack, uxMaxUsedHeap, uxMaxSizeHeap, uxMinFreeHeap );
 printf ( "resetting...\n" );
 NVIC_SystemReset();

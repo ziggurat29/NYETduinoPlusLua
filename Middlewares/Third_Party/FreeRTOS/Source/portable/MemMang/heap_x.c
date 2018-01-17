@@ -266,8 +266,8 @@ void *pvReturn = NULL;
 					pxBlock->pxNextFreeBlock = NULL;
 
 #if configMALLOC_FILL
-memset ( ((uint8_t*)pxBlock)+sizeof(BlockLink_t), 0xdd, xHeapStructSize-sizeof(BlockLink_t) );
-memset ( ((uint8_t*)pxBlock)+xHeapStructSize, 0xcd, (pxBlock->xBlockSize&~xBlockAllocatedBit) - xHeapStructSize );
+					memset ( ((uint8_t*)pxBlock)+sizeof(BlockLink_t), 0xdd, xHeapStructSize-sizeof(BlockLink_t) );
+					memset ( ((uint8_t*)pxBlock)+xHeapStructSize, 0xcd, (pxBlock->xBlockSize&~xBlockAllocatedBit) - xHeapStructSize );
 #endif
 				}
 				else
@@ -360,16 +360,16 @@ BlockLink_t *pxLink;
 
 void* pvPortRealloc( void* pvOrig, size_t xWantedSize )
 {
-	if ( 0 == xWantedSize )	//resize to 0 is effectively free()
+	if ( 0 == xWantedSize )	/* resize to 0 is effectively free() */
 	{
 		vPortFree( pvOrig );
 		return NULL;
 	}
-	else if ( NULL == pvOrig )	//NULL original block is effectively malloc()
+	else if ( NULL == pvOrig )	/* NULL original block is effectively malloc() */
 	{
 		return pvPortMalloc( xWantedSize );
 	}
-	else	//otherwise we are resizing a valid block, trying to keep it in place
+	else	/* otherwise we are resizing a valid block, trying to keep it in place */
 	{
 uint8_t* pbyScratch;
 BlockLink_t* pxLinkThis;
@@ -377,12 +377,12 @@ void* pvNewBlock;
 
 		vTaskSuspendAll();
 
-		//get to the BlockLink_t header that precedes this block
+		/* get to the BlockLink_t header that precedes this block */
 		pbyScratch = ((uint8_t*)pvOrig);
 		pbyScratch -= xHeapStructSize;
-		pxLinkThis = (void*) pbyScratch;	//(cast avoids warnings)
+		pxLinkThis = (void*) pbyScratch;	/* (cast avoids warnings) */
 
-		//Verify that the block is actually allocated.
+		/* Verify that the block is actually allocated. */
 		configASSERT( ( pxLinkThis->xBlockSize & xBlockAllocatedBit ) != 0 );
 		configASSERT( pxLinkThis->pxNextFreeBlock == NULL );
 
@@ -391,15 +391,15 @@ void* pvNewBlock;
 size_t nThisBlockSize = (pxLinkThis->xBlockSize & ~xBlockAllocatedBit);
 size_t nNewBlockSize = xWantedSize;
 
-			// The wanted size is increased so it can contain a BlockLink_t
-			//structure in addition to the requested amount of bytes.
+			/* The wanted size is increased so it can contain a BlockLink_t
+			structure in addition to the requested amount of bytes. */
 			nNewBlockSize += xHeapStructSize;
 
-			// Ensure that blocks are always aligned to the required number
-			//of bytes.
+			/* Ensure that blocks are always aligned to the required number
+			of bytes. */
 			if( ( nNewBlockSize & portBYTE_ALIGNMENT_MASK ) != 0x00 )
 			{
-				// Byte alignment required.
+				/* Byte alignment required. */
 				nNewBlockSize += ( portBYTE_ALIGNMENT - ( nNewBlockSize & portBYTE_ALIGNMENT_MASK ) );
 				configASSERT( ( nNewBlockSize & portBYTE_ALIGNMENT_MASK ) == 0 );
 			}
@@ -408,51 +408,51 @@ size_t nNewBlockSize = xWantedSize;
 				mtCOVERAGE_TEST_MARKER();
 			}
 
-			//staying the same size, which can happen for small size changes
+			/* staying the same size, which can happen for small size changes */
 			if ( nNewBlockSize == nThisBlockSize )
 			{
-				pvNewBlock = pvOrig;	//we have not moved
+				pvNewBlock = pvOrig;	/* we have not moved */
 			}
-			else if ( nNewBlockSize < nThisBlockSize )	//getting smaller
+			else if ( nNewBlockSize < nThisBlockSize )	/* getting smaller */
 			{
 BlockLink_t* pxLinkNext;
-				//see if we should split it
+				/* see if we should split it */
 
-				//next (new) block
+				/* next (new) block */
 				pbyScratch += nNewBlockSize;
-				pxLinkNext = (void*) pbyScratch;	//(cast avoids warnings)
+				pxLinkNext = (void*) pbyScratch;	/* (cast avoids warnings) */
 
-				//adjust our size, and set next block size
+				/* adjust our size, and set next block size */
 				pxLinkThis->xBlockSize = nNewBlockSize | xBlockAllocatedBit;
 				pxLinkNext->xBlockSize = nThisBlockSize - nNewBlockSize;
 
-				//add next block to free list
+				/* add next block to free list */
 				prvInsertBlockIntoFreeList ( pxLinkNext );
 				
-				//update to show much we have released to the free pool
+				/* update to show much we have released to the free pool */
 				xFreeBytesRemaining += nThisBlockSize - nNewBlockSize;
 
-				pvNewBlock = pvOrig;	//we have not moved
+				pvNewBlock = pvOrig;	/* we have not moved */
 			}
-			else	//getting bigger
+			else	/* getting bigger */
 			{
 BlockLink_t* pxLinkNext;
 size_t nExtraSize;
 
-				//get to next memory block
+				/* get to next memory block */
 				pbyScratch += nThisBlockSize;
-				pxLinkNext = (void*) pbyScratch;	//(cast avoids warnings)
+				pxLinkNext = (void*) pbyScratch;	/* (cast avoids warnings) */
 
-				//amount to remove from next block, if possible
+				/* amount to remove from next block, if possible */
 				nExtraSize = nNewBlockSize - nThisBlockSize;
-				//see if it's free and if there is enough in it
+				/* see if it's free and if there is enough in it */
 				if ( ( ( pxLinkNext->xBlockSize & xBlockAllocatedBit ) == 0 ) &&
 					( pxLinkNext->xBlockSize >= nExtraSize ) )
 				{
 BlockLink_t* pxIterator;
 BlockLink_t* pxLinkNewNext;
 
-					//first, take the free block out of the free list
+					/* first, take the free block out of the free list */
 					for( pxIterator = &xStart; pxIterator->pxNextFreeBlock != pxEnd; pxIterator = pxIterator->pxNextFreeBlock )
 					{
 						if ( pxIterator->pxNextFreeBlock == pxLinkNext )
@@ -462,37 +462,39 @@ BlockLink_t* pxLinkNewNext;
 						}
 					}
 
-					//split that block, if there is any left
+					/* split that block, if there is any left */
 					pbyScratch += nExtraSize;
-					pxLinkNewNext = (void*) pbyScratch;	//(cast avoids warnings)
+					pxLinkNewNext = (void*) pbyScratch;	/*(cast avoids warnings) */
 
 					if ( pxLinkNewNext != pxEnd )
 					{
-						//adjust that size and re-return it to the free pool to
-						//update pointers correctly
+						/* adjust that size and re-return it to the free pool to
+						  update pointers correctly
+						*/
 						pxLinkNewNext->xBlockSize = pxLinkNext->xBlockSize - nExtraSize;
 						prvInsertBlockIntoFreeList ( pxLinkNewNext );
 					}
 
-					//update our size
+					/* update our size */
 					pxLinkThis->xBlockSize = nNewBlockSize | xBlockAllocatedBit;
 
-					//update to show much we have taken from the free pool
+					/* update to show much we have taken from the free pool */
 					xFreeBytesRemaining -= nExtraSize;
 
 #if configMALLOC_FILL
-memset ( ((uint8_t*)pxLinkThis)+sizeof(BlockLink_t), 0xdd, xHeapStructSize-sizeof(BlockLink_t) );
-memset ( ((uint8_t*)pxLinkThis)+nThisBlockSize, 0xcd, nExtraSize );
+					memset ( ((uint8_t*)pxLinkThis)+sizeof(BlockLink_t), 0xdd, xHeapStructSize-sizeof(BlockLink_t) );
+					memset ( ((uint8_t*)pxLinkThis)+nThisBlockSize, 0xcd, nExtraSize );
 #endif
-					pvNewBlock = pvOrig;	//we have not moved
+					pvNewBlock = pvOrig;	/* we have not moved */
 				}
 				else
 				{
-					//cannot use stuff in next block; because of block merging
-					//on free, we know that there is only contiguous space in
-					//this block alone, therefore we must simply make a new
-					//allocation, copy the existing contents, and free this
-					pvNewBlock = pvPortMalloc ( xWantedSize );	//we moved to a new spot
+					/* cannot use stuff in next block; because of block merging
+					  on free, we know that there is only contiguous space in
+					  this block alone, therefore we must simply make a new
+					  allocation, copy the existing contents, and free this
+					*/
+					pvNewBlock = pvPortMalloc ( xWantedSize );	/* we moved to a new spot */
 					if ( NULL != pvNewBlock )
 					{
 						memcpy ( pvNewBlock, pvOrig, nThisBlockSize - xHeapStructSize );
@@ -501,7 +503,7 @@ memset ( ((uint8_t*)pxLinkThis)+nThisBlockSize, 0xcd, nExtraSize );
 				}
 			}
 		}
-		else	//horror; this block does not appear to be allocated
+		else	/* horror; this block does not appear to be allocated */
 		{
 			pvNewBlock = NULL;
 			mtCOVERAGE_TEST_MARKER();
@@ -513,6 +515,106 @@ memset ( ((uint8_t*)pxLinkThis)+nThisBlockSize, 0xcd, nExtraSize );
 	}
 }
 
+
+/*-----------------------------------------------------------*/
+
+
+/* heap corruption symptoms:
+  pointer unaligned as per portBYTE_ALIGNMENT_MASK -- invalid; unknown
+  pointer outside of established bounds of ucHeap -- corrupt; could hardfault
+  pointer moving backwards -- corrupt; could infinite loop
+  size marking alloc/free incorrectly -- corrupt; unknown
+*/
+static int inspectHeapCorruption ( BlockLink_t* pxLinkThis, BlockLink_t* pxLinkLast, int bAllocated )
+{
+	if ( 0 != ( (uintptr_t)pxLinkThis & portBYTE_ALIGNMENT_MASK ) )
+		return 1;	/* symptom 1:  block pointer unaligned */
+	if ( (uint8_t*)pxLinkThis < ucHeap || (uint8_t*)pxLinkThis >= ucHeap + configTOTAL_HEAP_SIZE )
+		return 2;	/* symptom 2:  block pointer out-of-bounds */
+	if ( pxLinkThis <= pxLinkLast )
+		return 3;	/* symptom 3:  linked list moving backwards */
+	if ( ( bAllocated && ! ( (uintptr_t)pxLinkThis & xBlockAllocatedBit ) ) ||
+			( ! bAllocated && ( (uintptr_t)pxLinkThis & xBlockAllocatedBit ) ) )
+		return 4;	/* symptom 4: unexpected allocation state */
+	return 0;	/* no heap corruption detected */
+}
+
+
+typedef int (*CBK_HEAPWALK) ( void* pblk, uint32_t nBlkSize, int bIsFree );
+
+int vPortHeapWalk ( CBK_HEAPWALK pfnWalk )
+{
+	vTaskSuspendAll();
+	
+	/* In the pathological case where we heapwalk before we have init'ed the
+	heap, ensure that the heap is init'ed. */
+	if( pxEnd == NULL )
+	{
+		prvHeapInit();
+	}
+	else
+	{
+		mtCOVERAGE_TEST_MARKER();
+	}
+
+	BlockLink_t* pxLinkFree;
+	BlockLink_t* pxLinkThis;
+	BlockLink_t* pxLinkLast;
+	int nInspectResult;
+
+	/* the free list is traversed as a linked list, the allocated blocks are
+	  traversed as contiguous blocks between the linked free ones. */
+
+	/* init block pointers */
+	pxLinkFree = xStart.pxNextFreeBlock;
+	pxLinkThis = (BlockLink_t*) ( ucHeap + ( portBYTE_ALIGNMENT - ( (size_t)ucHeap & portBYTE_ALIGNMENT_MASK ) ) );
+	pxLinkLast = NULL;
+
+	/* inspect first block for sanity before proceeding */
+	nInspectResult = inspectHeapCorruption ( pxLinkFree, pxLinkLast, 0 );
+	if ( 0 != nInspectResult )
+		return nInspectResult;
+
+	/* do the heap walk until done */
+	while ( pxLinkThis != pxEnd )
+	{
+		/* advance through alloc'ed blocks less than the next free'ed block */
+		while ( pxLinkThis < pxLinkFree )
+		{
+			/* inspect this block for sanity */
+			nInspectResult = inspectHeapCorruption ( pxLinkThis, pxLinkLast, 1 );
+			if ( 0 != nInspectResult )
+				return nInspectResult;
+			pxLinkLast = pxLinkThis;
+
+			/* emit data; alloc'ed block */
+			pfnWalk ( pxLinkThis, (pxLinkThis->xBlockSize&~xBlockAllocatedBit), 1 );
+			
+			pxLinkThis = (BlockLink_t*) (((uint8_t*)pxLinkThis) + (pxLinkThis->xBlockSize&~xBlockAllocatedBit));
+		}
+
+		/* now were are doing a single interceding free block */
+		pxLinkThis = pxLinkFree;
+
+		/* inspect this block for sanity */
+		nInspectResult = inspectHeapCorruption ( pxLinkThis, pxLinkLast, 0 );
+		if ( 0 != nInspectResult )
+			return nInspectResult;
+		pxLinkLast = pxLinkThis;
+
+		/* emit data; free'ed block */
+		pfnWalk ( pxLinkThis, pxLinkThis->xBlockSize, 0 );
+
+		/* advance ptr to next (alloc'ed) block, and next free block */
+		pxLinkThis = (BlockLink_t*) (((uint8_t*)pxLinkThis) + (pxLinkThis->xBlockSize&~xBlockAllocatedBit));
+		pxLinkFree = pxLinkFree->pxNextFreeBlock;
+	}
+
+	( void ) xTaskResumeAll();
+
+	/* finished; no detected heap errors */
+	return 0;
+}
 
 
 /*-----------------------------------------------------------*/
@@ -574,8 +676,13 @@ size_t xTotalHeapSize = configTOTAL_HEAP_SIZE;
 	pxFirstFreeBlock->pxNextFreeBlock = pxEnd;
 
 #if configMALLOC_FILL
-memset ( ((uint8_t*)pxFirstFreeBlock)+sizeof(BlockLink_t), 0xdd, xHeapStructSize-sizeof(BlockLink_t) );
-memset ( ((uint8_t*)pxFirstFreeBlock)+xHeapStructSize, 0xfd, (pxFirstFreeBlock->xBlockSize&~xBlockAllocatedBit) - xHeapStructSize );
+	/* fill in dead data at beginning and end of heap, due to misalignment */
+	memset ( ucHeap, 0xdd, pucAlignedHeap - ucHeap );
+	memset ( ((uint8_t*)pxEnd)+sizeof(BlockLink_t), 0xdd, configTOTAL_HEAP_SIZE - ( ((uint8_t*)pxEnd)+sizeof(BlockLink_t) - ucHeap ) );
+	/* fill in dead data at end of heap management header, due to alignment */
+	memset ( ((uint8_t*)pxFirstFreeBlock)+sizeof(BlockLink_t), 0xdd, xHeapStructSize-sizeof(BlockLink_t) );
+	/* fill in free data area with distinctive pattern to make the areas which have never been allocated plainly visible */
+	memset ( ((uint8_t*)pxFirstFreeBlock)+xHeapStructSize, 0xed, (pxFirstFreeBlock->xBlockSize&~xBlockAllocatedBit) - xHeapStructSize );
 #endif
 	/* Only one block exists - and it covers the entire usable heap space. */
 	xMinimumEverFreeBytesRemaining = pxFirstFreeBlock->xBlockSize;
@@ -646,8 +753,8 @@ uint8_t *puc;
 	}
 
 #if configMALLOC_FILL
-memset ( ((uint8_t*)pxBlockToInsert)+sizeof(BlockLink_t), 0xdd, xHeapStructSize-sizeof(BlockLink_t) );
-memset ( ((uint8_t*)pxBlockToInsert)+xHeapStructSize, 0xfd, pxBlockToInsert->xBlockSize - xHeapStructSize );
+	memset ( ((uint8_t*)pxBlockToInsert)+sizeof(BlockLink_t), 0xdd, xHeapStructSize-sizeof(BlockLink_t) );
+	memset ( ((uint8_t*)pxBlockToInsert)+xHeapStructSize, 0xfd, pxBlockToInsert->xBlockSize - xHeapStructSize );
 #endif
 }
 

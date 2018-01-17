@@ -261,7 +261,7 @@ void prvGetRegistersFromStack( uint32_t* pulFaultStackAddress )
 	pc = pulFaultStackAddress[ 6 ];
 	psr = pulFaultStackAddress[ 7 ];
 
-	volatile register uint32_t faultspHold asm ("r1") = pulFaultStackAddress;
+	volatile register uint32_t faultspHold asm ("r1") = (uint32_t)pulFaultStackAddress;
 	__asm volatile
 	(
 		"mov r0, sp \n"	//stow it for a moment
@@ -270,6 +270,7 @@ void prvGetRegistersFromStack( uint32_t* pulFaultStackAddress )
 		: //(no inputs)
 		: "r0"
 	);
+	(void)faultspHold;
 
 	//When the following line is hit, the variables contain the register values.
 	volatile int n = 0;
