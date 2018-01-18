@@ -55,6 +55,11 @@
 
 /* USER CODE BEGIN Includes */
 
+#include "system_interfaces.h"
+#include "serial_devices.h"
+
+
+
 //This controls whether we use the FreeRTOS heap implementation to also provide
 //the libc malloc() and friends.  Note, if you turn this off, you will want to
 //adjust _Min_Heap_Size in the linker script, because it is set to a very low
@@ -67,7 +72,7 @@
 #if configAPPLICATION_ALLOCATED_HEAP
 //we define our heap (to be used by FreeRTOS heap_4.c implementation) to be
 //exactly where we want it to be.
-//__attribute__((aligned(8))) 
+__attribute__((aligned(8))) 
 uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 #endif
 //we implemented a 'realloc' for a heap_4 derived implementation
@@ -95,11 +100,7 @@ void* __wrap__realloc_r ( struct _reent* r, void* pv, size_t size ) { return pvP
 
 
 //XXX heapwalker callback for testing
-int cbkHeapWalk ( void* pblk, uint32_t nBlkSize, int bIsFree )
-{
-	volatile int i = 0;
-	return 1;
-}
+int cbkHeapWalk ( void* pblk, uint32_t nBlkSize, int bIsFree );
 
 #endif
 
@@ -203,6 +204,11 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	//enable the core debug cycle counter to be used as a precision timer
+	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+	DWT->CYCCNT = 0;
+	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
 	{
 		/*
 		void* pvMem001 = pvPortMalloc( 10 );
@@ -731,6 +737,49 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+
+//====================================================
+
+
+
+void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
+{
+	/* Run time stack overflow checking is performed if
+	configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
+	called if a stack overflow is detected. */
+	volatile int i = 0;
+	(void)i;
+}
+
+
+
+void vApplicationMallocFailedHook(void)
+{
+	/* vApplicationMallocFailedHook() will only be called if
+	configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h. It is a hook
+	function that will get called if a call to pvPortMalloc() fails.
+	pvPortMalloc() is called internally by the kernel whenever a task, queue,
+	timer or semaphore is created. It is also called by various parts of the
+	demo application. If heap_1.c or heap_2.c are used, then the size of the
+	heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
+	FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
+	to query the size of free heap space that remains (although it does not
+	provide information on how the remaining heap might be fragmented). */
+	volatile int i = 0;
+	(void)i;
+}
+
+
+//XXX heapwalker callback for testing
+int cbkHeapWalk ( void* pblk, uint32_t nBlkSize, int bIsFree )
+{
+	volatile int i = 0;
+	(void)i;
+	return 1;
+}
+
+
+
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
@@ -743,6 +792,12 @@ void StartDefaultTask(void const * argument)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 5 */
+
+	//get our serial ports initialized
+	//UART6_Init();
+	//USBCDC_Init();
+
+
 	volatile UBaseType_t uxMinFreeStack;
 	volatile UBaseType_t uxMaxSizeHeap;
 	volatile UBaseType_t uxMaxUsedHeap;
@@ -790,7 +845,8 @@ void StartDefaultTask(void const * argument)
 	}
 
 #endif
-	/* Infinite loop */
+
+
 	uxMinFreeStack = uxTaskGetStackHighWaterMark( NULL );
 #if USE_FREERTOS_HEAP_IMPL
 	uxMinFreeHeap = xPortGetMinimumEverFreeHeapSize();
@@ -801,14 +857,22 @@ void StartDefaultTask(void const * argument)
 	uxMinFreeHeap = (char*)platform_get_last_free_ram( 0 ) - heap_ptr;
 #endif
 
-printf ( "minfreestack: %lu words; maxheapused: %lu of %lu (minfree %lu)\n",
-		uxMinFreeStack, uxMaxUsedHeap, uxMaxSizeHeap, uxMinFreeHeap );
-printf ( "resetting...\n" );
-NVIC_SystemReset();
+	printf ( "minfreestack: %lu words; maxheapused: %lu of %lu (minfree %lu)\n",
+			uxMinFreeStack, uxMaxUsedHeap, uxMaxSizeHeap, uxMinFreeHeap );
+
+	//heapwalk
+	vPortHeapWalk ( cbkHeapWalk );
+		
+	printf ( "resetting...\n" );
+	NVIC_SystemReset();
+
+	/*
+	// Infinite loop
 	for(;;)
 	{
 		osDelay(1);
 	}
+	*/
   /* USER CODE END 5 */ 
 }
 
@@ -842,9 +906,10 @@ void _Error_Handler(char * file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  while(1) 
-  {
-  }
+	volatile int bSpin = 1;
+	while(bSpin)
+	{
+	}
   /* USER CODE END Error_Handler_Debug */ 
 }
 
@@ -862,6 +927,10 @@ void assert_failed(uint8_t* file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+	volatile int bSpin = 1;
+	while(bSpin)
+	{
+	}
   /* USER CODE END 6 */
 
 }
