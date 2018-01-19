@@ -28,6 +28,10 @@
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"
 
+#include "../../../../system_interfaces.h"
+#include "../../../../serial_devices.h"
+
+
 //HHH
 /*
 #ifdef BUILD_USB_CDC
@@ -660,8 +664,11 @@ void platform_s_uart_send( unsigned id, u8 data )
   }
 */
 
+/*
 	//XXX no-brainer blocking mode for initial attempt
 	HAL_StatusTypeDef hret = HAL_UART_Transmit ( &huart6, &data, 1, 1000 );
+*/
+	int nRet = g_iosUART6._transmitCompletely ( &g_iosUART6, &data, 1, 1000 );
 }
 
 int platform_s_uart_recv( unsigned id, timer_data_type timeout )
@@ -682,6 +689,7 @@ int platform_s_uart_recv( unsigned id, timer_data_type timeout )
   return USART_ReceiveData(stm32_usart[id]);
 */
 
+/*
 	//XXX no-brainer blocking mode for initial attempt
 	uint32_t Timeout = PLATFORM_TIMER_INF_TIMEOUT == timeout ? 0xffff : timeout;
 
@@ -690,6 +698,14 @@ int platform_s_uart_recv( unsigned id, timer_data_type timeout )
 	if ( HAL_OK == hret )
 		return RxData;
 	return -1;
+*/
+	
+	uint8_t data;
+	int nRet = g_iosUART6._receiveCompletely ( &g_iosUART6, &data, 1, 1000 );
+	if ( 0 == nRet )
+		return data;
+	else
+		return -1;
 }
 
 int platform_s_uart_set_flow_control( unsigned id, int type )

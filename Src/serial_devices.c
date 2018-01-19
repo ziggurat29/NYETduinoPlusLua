@@ -92,7 +92,7 @@ static int Serial_transmitCompletely ( const IOStreamIF* pcom, const void* pv, s
 static int Serial_receiveCompletely ( const IOStreamIF* pcom, void* pv, const size_t nLen, uint32_t to );
 
 
-const IOStreamIF g_pifUART6 = {
+const IOStreamIF g_iosUART6 = {
 	UART6_flushTtransmit,
 	UART6_transmitFree,
 	UART6_transmit,
@@ -105,7 +105,7 @@ const IOStreamIF g_pifUART6 = {
 };
 
 
-const IOStreamIF g_pifCDC = {
+const IOStreamIF g_iosCDC = {
 	USBCDC_flushTtransmit,
 	USBCDC_transmitFree,
 	USBCDC_transmit,
@@ -166,7 +166,7 @@ __weak void UART6_TransmitEmpty ( void ){}
 //A UART has completed transmission.  Push more if we've got it.
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if ( USART2 == huart->Instance )
+	if ( USART6 == huart->Instance )
 	{
 		int bEmpty;
 UBaseType_t uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();	//lock queue XXX heavy handed
@@ -196,7 +196,7 @@ taskEXIT_CRITICAL_FROM_ISR(uxSavedInterruptStatus);	//unlock queue XXX heavy han
 //A UART has completed reception.  Stick it in our queue if we can.
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if ( USART2 == huart->Instance )
+	if ( USART6 == huart->Instance )
 	{
 UBaseType_t uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();	//lock queue XXX heavy handed
 		//XXX if ( ! UART6_rxbuff_full() )
@@ -226,7 +226,7 @@ taskEXIT_CRITICAL_FROM_ISR(uxSavedInterruptStatus);	//unlock queue XXX heavy han
 //UART error
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
-	if ( USART2 == huart->Instance )
+	if ( USART6 == huart->Instance )
 	{
 		//XXX III
 	}
@@ -329,9 +329,7 @@ UBaseType_t uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();	//lock queue
 //	if ( HAL_UART_STATE_READY == huart6.State ||
 //			HAL_UART_STATE_BUSY_RX == huart6.State
 //new HAL lib split state into two vars
-	if ( HAL_UART_STATE_READY == huart6.gState ||
-			HAL_UART_STATE_BUSY_RX == huart6.RxState
-		)	//must grope for TX only ready state
+	if ( HAL_UART_STATE_READY == huart6.gState )	//must grope for TX only ready state
 	{
 		__kickstartTransmitUART6();
 	}

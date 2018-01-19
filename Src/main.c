@@ -794,7 +794,7 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN 5 */
 
 	//get our serial ports initialized
-	//UART6_Init();
+	UART6_Init();		//UART 6 == 'COM1'
 	//USBCDC_Init();
 
 

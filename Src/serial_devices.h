@@ -16,8 +16,8 @@ extern "C" {
 
 
 //the stream interface objects we expose.
-extern const IOStreamIF g_pifUART6;
-extern const IOStreamIF g_pifCDC;
+extern const IOStreamIF g_iosUART6;
+extern const IOStreamIF g_iosCDC;
 
 
 //these init methods are intended to be called once; they initialize internal
