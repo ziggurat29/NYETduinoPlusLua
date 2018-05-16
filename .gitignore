@@ -10,3 +10,4 @@
 /Src/Backup
 /Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/*.xxx
 /Debug
+/Release

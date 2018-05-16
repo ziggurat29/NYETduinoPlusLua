@@ -54,6 +54,51 @@
 
 /* USER CODE BEGIN Includes */
 
+
+
+//This controls whether we use the FreeRTOS heap implementation to also provide
+//the libc malloc() and friends.  Note, if you turn this off, you will want to
+//adjust _Min_Heap_Size in the linker script, because it is set to a very low
+//value.
+#define USE_FREERTOS_HEAP_IMPL 1
+
+
+#if USE_FREERTOS_HEAP_IMPL
+
+#if configAPPLICATION_ALLOCATED_HEAP
+//we define our heap (to be used by FreeRTOS heap_4.c implementation) to be
+//exactly where we want it to be.
+__attribute__((aligned(8))) 
+uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
+#endif
+//we implemented a 'realloc' for a heap_4 derived implementation
+extern void* pvPortRealloc( void* pvOrig, size_t xWantedSize );
+//we implemented a 'heapwalk' function
+typedef int (*CBK_HEAPWALK) ( void* pblk, uint32_t nBlkSize, int bIsFree );
+extern int vPortHeapWalk ( CBK_HEAPWALK pfnWalk );
+
+//'wrapped functions' for library interpositioning
+//you must specify these gcc (linker-directed) options to cause the wrappers'
+//delights to be generated:
+
+//-Wl,--wrap,malloc -Wl,--wrap,free -Wl,--wrap,realloc -Wl,--wrap,calloc
+//-Wl,--wrap,_malloc_r -Wl,--wrap,_free_r -Wl,--wrap,_realloc_r -Wl,--wrap,_calloc_r
+
+//hmm; can I declare these 'inline' and save a little code and stack?
+void* __wrap_malloc ( size_t size ) { return pvPortMalloc ( size ); }
+void __wrap_free ( void* pv ) { vPortFree ( pv ); }
+void* __wrap_realloc ( void* pv, size_t size ) { return pvPortRealloc ( pv, size ); }
+
+void* __wrap__malloc_r ( struct _reent* r, size_t size ) { return pvPortMalloc ( size ); }
+void __wrap__free_r ( struct _reent* r, void* pv ) { vPortFree ( pv ); }
+void* __wrap__realloc_r ( struct _reent* r, void* pv, size_t size ) { return pvPortRealloc ( pv, size ); }
+
+
+
+#endif
+
+
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
