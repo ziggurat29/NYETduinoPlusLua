@@ -1,0 +1,11 @@
+/#doc/
+/#hold/
+/*.pdf
+/mx.scratch
+/.settings
+/NYETDuinoPlusLua Debug.cfg
+/NYETDuinoPlusLua-openocd.cfg
+/NYETDuinoPlusLua.txt
+/Inc/Backup
+/Src/Backup
+/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/*.xxx
