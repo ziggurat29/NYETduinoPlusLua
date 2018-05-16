@@ -864,6 +864,7 @@ void StartDefaultTask(void const * argument)
 	vPortHeapWalk ( cbkHeapWalk );
 		
 	printf ( "resetting...\n" );
+	osDelay ( 500 );	//delay a little to let all that go out before we reset
 	NVIC_SystemReset();
 
 	/*

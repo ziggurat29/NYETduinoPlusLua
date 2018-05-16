@@ -29,6 +29,7 @@
 
 int platform_cpu_set_global_interrupts( int status )
 {
+	/*
 	volatile register uint32_t crt_status asm ("r5");
 	__asm volatile
 	(
@@ -50,17 +51,22 @@ int platform_cpu_set_global_interrupts( int status )
 		);
 	}
 	return ( crt_status & INTERRUPT_MASK_BIT ) == INTERRUPT_ACTIVE;
+	*/
+	return 0;	//XXX III
 }
 
 
 int platform_cpu_get_global_interrupts( void )
 {
+	/*
 	volatile register uint32_t crt_status asm ("r5");
 	__asm volatile
 	(
 		"mrs       r5, PRIMASK \n"
 	);
 	return ( crt_status & INTERRUPT_MASK_BIT ) == INTERRUPT_ACTIVE;
+	*/
+	return 0;	//XXX III
 }
 
 
