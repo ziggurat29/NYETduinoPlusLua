@@ -146,7 +146,7 @@
 								</option>
 								<option id="fr.ac6.managedbuild.gnu.c.compiler.option.misc.other.1137235014" superClass="fr.ac6.managedbuild.gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-fmessage-length=0" valueType="string"/>
 								<option id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.fdata.1665910088" name="Place the data in their own section (-fdata-sections)" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.fdata" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="fr.ac6.managedbuid.gnu.c.compiler.option.misc.other.1433501748" superClass="fr.ac6.managedbuid.gnu.c.compiler.option.misc.other" value="-fmessage-length=0 -Wdouble-promotion -fsingle-precision-constant" valueType="string"/>
+								<option id="fr.ac6.managedbuid.gnu.c.compiler.option.misc.other.1433501748" name="Other flags" superClass="fr.ac6.managedbuid.gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-fmessage-length=0 -Wdouble-promotion -fsingle-precision-constant" valueType="string"/>
 								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.204341835" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c"/>
 								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.s.2115458807" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.s"/>
 							</tool>

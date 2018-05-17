@@ -45,6 +45,7 @@
   *
   ******************************************************************************
   */
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_hal.h"
@@ -113,6 +114,8 @@ I2C_HandleTypeDef hi2c1;
 RNG_HandleTypeDef hrng;
 
 RTC_HandleTypeDef hrtc;
+RTC_TimeTypeDef sTime;
+RTC_DateTypeDef sDate;
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi3;
@@ -323,9 +326,6 @@ static void MX_RNG_Init(void)
 static void MX_RTC_Init(void)
 {
 
-  RTC_TimeTypeDef sTime;
-  RTC_DateTypeDef sDate;
-
     /**Initialize RTC Only 
     */
   hrtc.Instance = RTC;
@@ -343,20 +343,10 @@ static void MX_RTC_Init(void)
     /**Initialize RTC and set the Time and Date 
     */
   if(HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR0) != 0x32F2){
-  sTime.Hours = 0x0;
-  sTime.Minutes = 0x0;
-  sTime.Seconds = 0x0;
-  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
   if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
-
-  sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-  sDate.Month = RTC_MONTH_JANUARY;
-  sDate.Date = 0x1;
-  sDate.Year = 0x0;
 
   if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
   {
@@ -372,6 +362,7 @@ static void MX_RTC_Init(void)
 static void MX_SPI1_Init(void)
 {
 
+  /* SPI1 parameter configuration*/
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
@@ -395,6 +386,7 @@ static void MX_SPI1_Init(void)
 static void MX_SPI3_Init(void)
 {
 
+  /* SPI3 parameter configuration*/
   hspi3.Instance = SPI3;
   hspi3.Init.Mode = SPI_MODE_MASTER;
   hspi3.Init.Direction = SPI_DIRECTION_2LINES;
