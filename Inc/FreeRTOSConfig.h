@@ -107,6 +107,8 @@
 #define configUSE_16_BIT_TICKS                   0
 #define configUSE_MUTEXES                        1
 #define configQUEUE_REGISTRY_SIZE                8
+#define configCHECK_FOR_STACK_OVERFLOW           2
+#define configUSE_MALLOC_FAILED_HOOK             1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION  1
 
 /* Co-routine definitions. */
@@ -123,6 +125,7 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelayUntil             0
 #define INCLUDE_vTaskDelay                  1
 #define INCLUDE_xTaskGetSchedulerState      1
+#define INCLUDE_uxTaskGetStackHighWaterMark 1
 
 /* Cortex-M specific definitions. */
 #ifdef __NVIC_PRIO_BITS
@@ -166,6 +169,26 @@ standard names. */
 
 /* USER CODE BEGIN Defines */   	      
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
+
+//I'm not yet sure if/why this is needed, but it apparently is to support newlib in some way
+#define configUSE_NEWLIB_REENTRANT 1
+
+//have some more tracing functions
+#define configUSE_TRACE_FACILITY 1
+
+//override memory selection made in STM32CubeMX, and explicitly support
+//FreeRTOS dynamic memory management.  However, we will be providing our own
+//heap implementation (derived from heap4.c, but with realloc implemented)
+#undef configSUPPORT_DYNAMIC_ALLOCATION
+#define configSUPPORT_DYNAMIC_ALLOCATION 1
+#undef configTOTAL_HEAP_SIZE
+#define configTOTAL_HEAP_SIZE 65536
+#undef configAPPLICATION_ALLOCATED_HEAP
+#define configAPPLICATION_ALLOCATED_HEAP 1
+
+#undef configMALLOC_FILL
+#define configMALLOC_FILL 1
+
 /* USER CODE END Defines */ 
 
 #endif /* FREERTOS_CONFIG_H */

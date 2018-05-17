@@ -99,6 +99,12 @@ void* __wrap__realloc_r ( struct _reent* r, void* pv, size_t size ) { return pvP
 
 
 
+#include "lua/lua.h"
+#include "lua/lauxlib.h"
+#include "lua/lualib.h"
+
+
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -522,6 +528,40 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+
+//====================================================
+
+
+
+void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
+{
+	/* Run time stack overflow checking is performed if
+	configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
+	called if a stack overflow is detected. */
+	volatile int i = 0;
+	(void)i;
+}
+
+
+
+void vApplicationMallocFailedHook(void)
+{
+	/* vApplicationMallocFailedHook() will only be called if
+	configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h. It is a hook
+	function that will get called if a call to pvPortMalloc() fails.
+	pvPortMalloc() is called internally by the kernel whenever a task, queue,
+	timer or semaphore is created. It is also called by various parts of the
+	demo application. If heap_1.c or heap_2.c are used, then the size of the
+	heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
+	FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
+	to query the size of free heap space that remains (although it does not
+	provide information on how the remaining heap might be fragmented). */
+	volatile int i = 0;
+	(void)i;
+}
+
+
+
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
@@ -534,6 +574,31 @@ void StartDefaultTask(void const * argument)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 5 */
+//
+{
+#if 0
+	lua_State* L = luaL_newstate();
+	if ( NULL == L )
+	{
+		//horror;
+	}
+	else
+	{
+		int status, result;
+		//lua_pushcfunction(L, &pmain);  /* to call 'pmain' in protected mode */
+		//lua_pushinteger(L, argc);  /* 1st argument */
+		//lua_pushlightuserdata(L, argv); /* 2nd argument */
+		//status = lua_pcall(L, 2, 1, 0);  /* do the call */
+		result = lua_toboolean(L, -1);  /* get result */
+		//report(L, status);
+		lua_close(L);
+	}
+#else
+	extern int luashell_main(void);
+	luashell_main();
+#endif
+}
+
   /* Infinite loop */
   for(;;)
   {

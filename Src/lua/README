@@ -1,0 +1,18 @@
+
+This is Lua 5.3.4, released on 12 Jan 2017.
+
+For installation instructions, license details, and
+further information about Lua, see doc/readme.html.
+
+//========================================================================
+I have modified this release as little as practically as possible for my
+embedded needs.
+*  I dropped luac.c, which is a stand-alone executable, anyway
+*  I have modified lua.c, which is the 'main' module for the interactive
+  interpreter.
+  For initial experimentation, I still want this, but I am going to be
+  invoking it from a FreeRTOS task, so it doesn't have the same sort of
+  main() with arg, argv, etc.
+  This probably will be replaced eventually (maybe), but it is useful for
+  now while I bring up the rest of the platform, especially the newlib
+  syscalls adaption and a serial channels for stdin/out/err.
