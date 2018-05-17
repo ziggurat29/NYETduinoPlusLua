@@ -55,6 +55,9 @@
 
 /* USER CODE BEGIN Includes */
 
+#include "system_interfaces.h"
+#include "serial_devices.h"
+
 
 
 //This controls whether we use the FreeRTOS heap implementation to also provide
@@ -120,6 +123,8 @@ RTC_DateTypeDef sDate;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi3;
 
+UART_HandleTypeDef huart6;
+
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
@@ -135,6 +140,7 @@ static void MX_SPI1_Init(void);
 static void MX_SPI3_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_RTC_Init(void);
+static void MX_USART6_UART_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -150,7 +156,19 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	//enable the core debug cycle counter to be used as a precision timer
+	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+	DWT->CYCCNT = 0;
+	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
+	//XXX crap! STM32Workbench thinks it's cool to have a global date and time
+	//for some reason, and furthermore does not init them in a way that will
+	//not assert later on.  Rude.  Does anyone QA this stuff?
+	//sTime.
+	sDate.Year = 18;
+	sDate.Month = 1;
+	sDate.Date = 1;
+	sDate.WeekDay = 1;	//(does monday=1?)
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -176,6 +194,7 @@ int main(void)
   MX_SPI3_Init();
   MX_I2C1_Init();
   MX_RTC_Init();
+  MX_USART6_UART_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -214,13 +233,13 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	NVIC_SystemReset();	//not supposed to be here!
+//  while (1)
+//  {
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-
-  }
+//  }
   /* USER CODE END 3 */
 
 }
@@ -342,6 +361,8 @@ static void MX_RTC_Init(void)
 
     /**Initialize RTC and set the Time and Date 
     */
+//XXX what is this insufferable junk? q.v. stm32f4xx_hal_rtc.c:653; of course it will assert, dummkopf; it's explicitly set to zero! does anyone test this shit before release? because I am just not convinced.  I waste so much time with this crappy code, on top of this exquisitely slow java based IDE.  It's enough to make me go back to MicroChip PIC32 parts.  Think about it.
+/*
   if(HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR0) != 0x32F2){
   if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
   {
@@ -355,6 +376,7 @@ static void MX_RTC_Init(void)
 
     HAL_RTCEx_BKUPWrite(&hrtc,RTC_BKP_DR0,0x32F2);
   }
+*/
 
 }
 
@@ -400,6 +422,25 @@ static void MX_SPI3_Init(void)
   hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi3.Init.CRCPolynomial = 10;
   if (HAL_SPI_Init(&hspi3) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* USART6 init function */
+static void MX_USART6_UART_Init(void)
+{
+
+  huart6.Instance = USART6;
+  huart6.Init.BaudRate = 115200;
+  huart6.Init.WordLength = UART_WORDLENGTH_8B;
+  huart6.Init.StopBits = UART_STOPBITS_1;
+  huart6.Init.Parity = UART_PARITY_NONE;
+  huart6.Init.Mode = UART_MODE_TX_RX;
+  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart6) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -452,9 +493,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(SWITCH1_A_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : A0_Pin A1_Pin A2_Pin A3_Pin 
-                           A4_Pin A5_Pin D1_Pin D0_Pin */
+                           A4_Pin A5_Pin */
   GPIO_InitStruct.Pin = A0_Pin|A1_Pin|A2_Pin|A3_Pin 
-                          |A4_Pin|A5_Pin|D1_Pin|D0_Pin;
+                          |A4_Pin|A5_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -566,6 +607,25 @@ void StartDefaultTask(void const * argument)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 5 */
+
+	//get our serial ports initialized
+	UART6_Init();		//UART 6 == 'COM1'
+	//USBCDC_Init();
+
+
+	volatile UBaseType_t uxMinFreeStack;
+	volatile UBaseType_t uxMaxSizeHeap;
+	volatile UBaseType_t uxMaxUsedHeap;
+	volatile UBaseType_t uxMinFreeHeap;
+
+	uxMinFreeStack = uxTaskGetStackHighWaterMark( NULL );
+#if USE_FREERTOS_HEAP_IMPL
+	uxMaxSizeHeap = configTOTAL_HEAP_SIZE;
+	uxMinFreeHeap = xPortGetMinimumEverFreeHeapSize();
+#else
+	uxMaxSizeHeap = (char*)platform_get_last_free_ram( 0 ) - (char*)platform_get_first_free_ram( 0 );
+#endif
+
 //
 {
 #if 0
@@ -590,6 +650,26 @@ void StartDefaultTask(void const * argument)
 	luashell_main();
 #endif
 }
+
+	uxMinFreeStack = uxTaskGetStackHighWaterMark( NULL );
+#if USE_FREERTOS_HEAP_IMPL
+	uxMinFreeHeap = xPortGetMinimumEverFreeHeapSize();
+	uxMaxUsedHeap = uxMaxSizeHeap - uxMinFreeHeap;
+#else
+	extern char* heap_ptr;
+	uxMaxUsedHeap = heap_ptr - (char*)platform_get_first_free_ram( 0 );
+	uxMinFreeHeap = (char*)platform_get_last_free_ram( 0 ) - heap_ptr;
+#endif
+
+	printf ( "minfreestack: %lu words; maxheapused: %lu of %lu (minfree %lu)\n",
+			uxMinFreeStack, uxMaxUsedHeap, uxMaxSizeHeap, uxMinFreeHeap );
+
+	//heapwalk
+	//vPortHeapWalk ( cbkHeapWalk );
+
+	printf ( "resetting...\n" );
+	osDelay ( 500 );	//delay a little to let all that go out before we reset
+	NVIC_SystemReset();
 
   /* Infinite loop */
   for(;;)
@@ -616,7 +696,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
 /* USER CODE BEGIN Callback 1 */
-
+	//XXX the other timer switches would go here
 /* USER CODE END Callback 1 */
 }
 
@@ -629,9 +709,10 @@ void _Error_Handler(char * file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  while(1) 
-  {
-  }
+	volatile int bSpin = 1;
+	while(bSpin)
+	{
+	}
   /* USER CODE END Error_Handler_Debug */ 
 }
 
@@ -649,6 +730,10 @@ void assert_failed(uint8_t* file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+	volatile int bSpin = 1;
+	while(bSpin)
+	{
+	}
   /* USER CODE END 6 */
 
 }

@@ -109,10 +109,6 @@
 #define D12_GPIO_Port GPIOB
 #define D11_Pin GPIO_PIN_15
 #define D11_GPIO_Port GPIOB
-#define D1_Pin GPIO_PIN_6
-#define D1_GPIO_Port GPIOC
-#define D0_Pin GPIO_PIN_7
-#define D0_GPIO_Port GPIOC
 #define ENC_CS_Pin GPIO_PIN_8
 #define ENC_CS_GPIO_Port GPIOC
 #define CLOCK_OUT_25MHZ_Pin GPIO_PIN_8
