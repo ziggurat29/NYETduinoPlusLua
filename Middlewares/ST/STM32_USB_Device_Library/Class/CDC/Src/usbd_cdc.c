@@ -669,6 +669,9 @@ static uint8_t  USBD_CDC_DataIn (USBD_HandleTypeDef *pdev, uint8_t epnum)
   {
     
     hcdc->TxState = 0;
+/* USER CODE BEGIN MyCDCExt */
+	((USBD_CDC_ItfTypeDef *)pdev->pUserData)->TxComplete ( hcdc->TxBuffer, hcdc->TxLength );
+/* USER CODE END MyCDCExt */
 
     return USBD_OK;
   }

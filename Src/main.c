@@ -178,6 +178,22 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
+	//if you get a linker fail on the following, it is because some manual
+	//changes to:
+	//  .\Middlewares\ST\STM32_USB_Device_Library\Class\CDC\Inc\usbd_cdc.h
+	//  .\Middlewares\ST\STM32_USB_Device_Library\Class\CDC\Src\usbd_cdc.c
+	//  .\Src\usbd_cdc_if.c
+	//must be applied.  There are backups of those files to help with that.
+	//This has to be done manually, because the changes are in tool-generated
+	//code that gets overwritten when you re-run STM32CubeMX.  The nature of
+	//those changes are such that when they are overwritten, you will still
+	//be able to build but stuff won't work at runtime.  This hack will cause
+	//the build to fail if you forget to merge those changes back on, thus
+	//prompting you to do so.
+	//Sorry for the inconvenience, but I don't think there is any better way
+	//of making it obvious that this chore simply must be done.
+	XXX_USBCDC_PresenceHack();	//this does nothing real; do not delete
+
   /* USER CODE END Init */
 
   /* Configure the system clock */

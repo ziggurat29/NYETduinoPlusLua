@@ -104,13 +104,23 @@ typedef struct _USBD_CDC_Itf
   int8_t (* DeInit)        (void);
   int8_t (* Control)       (uint8_t, uint8_t * , uint16_t);   
   int8_t (* Receive)       (uint8_t *, uint32_t *);  
+/* USER CODE BEGIN MyCDCExt */
+  void (* TxComplete)       (uint8_t *, uint32_t );
+/* USER CODE END MyCDCExt */
 
 }USBD_CDC_ItfTypeDef;
-
+/* USER CODE BEGIN MyCDCExt */
+//hack to help remember to re-apply the hacks when code is regenerated.
+void XXX_USBCDC_PresenceHack ( void );
+/* USER CODE END MyCDCExt */
 
 typedef struct
 {
-  uint32_t data[CDC_DATA_HS_MAX_PACKET_SIZE/4];      /* Force 32bits alignment */
+/* USER CODE BEGIN MyCDCExt */
+//hack; this chip is FS only, so why do I want to waste 448 bytes?
+//  uint32_t data[CDC_DATA_HS_MAX_PACKET_SIZE/4];      /* Force 32bits alignment */
+  uint32_t data[CDC_DATA_FS_MAX_PACKET_SIZE/4];      /* Force 32bits alignment */
+/* USER CODE END MyCDCExt */
   uint8_t  CmdOpCode;
   uint8_t  CmdLength;    
   uint8_t  *RxBuffer;  
