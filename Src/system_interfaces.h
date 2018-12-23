@@ -41,7 +41,7 @@ struct IOStreamIF
 	int (* _receiveCompletely) ( const IOStreamIF* pthis, void* pv, const size_t nLen, uint32_t to );
 	
 	//(constant) instance data
-	void* huart;	//a litle tacky; usually a UART_HandleTypeDef
+	void* huart;	//a little tacky; usually a UART_HandleTypeDef
 };
 
 

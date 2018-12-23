@@ -27,6 +27,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/times.h>
+#include <reent.h>
+#include <unistd.h>
+
 
 
 //environ
@@ -47,7 +50,7 @@ int close(int file);
 
 //execve
 //Transfer control to a new process.
-int execve(char* name, char** argv, char** env);
+int execve(const char *__path, char * const __argv[], char * const __envp[]);
 
 //fork
 //Create a new process.
@@ -72,11 +75,11 @@ int kill(int pid, int sig);
 
 //link
 //Establish a new name for an existing file.
-int link(char* old, char* new);
+int link(const char *__path1, const char *__path2);
 
 //lseek
 //Set position in a file.
-int lseek(int file, int ptr, int dir);
+off_t lseek(int __fildes, off_t __offset, int __whence);
 
 //open
 //Open a file.
@@ -84,12 +87,12 @@ int open(const char* name, int flags, int mode);
 
 //read
 //Read from a file.
-int read(int file, char* ptr, int len);
+int read(int __fd, void *__buf, size_t __nbyte);
 
 //sbrk
 //Increase program data space. As malloc and related functions depend on this,
 //it is useful to have a working implementation.
-caddr_t sbrk(int incr);
+void* sbrk(ptrdiff_t __incr);
 
 //stat
 //Status of a file (by name).
@@ -101,7 +104,7 @@ clock_t times(struct tms* buf);
 
 //unlink
 //Remove a file’s directory entry.
-int unlink(char* name);
+int unlink(const char *__path);
 
 //wait
 //Wait for a child process.
@@ -112,7 +115,7 @@ int wait(int* status);
 //all files, including stdout—so if you need to generate any output, for
 //example to a serial port for debugging, you should make your minimal write
 //capable of doing this.
-int write(int file, char* ptr, int len);
+int write(int __fd, const void *__buf, size_t __nbyte);
 
 //12.2 Reentrant covers for OS subroutines
 //Since the system subroutines are used by other library routines that require
@@ -124,62 +127,62 @@ int write(int file, char* ptr, int len);
 //_open_r
 //A reentrant version of open. It takes a pointer to the global data block,
 //which holds errno.
-int _open_r(void* reent, const char* file, int flags, int mode);
+int _open_r(struct _reent* reent, const char* file, int flags, int mode);
 
 //_close_r
 //A reentrant version of close. It takes a pointer to the global data block,
 //which holds errno.
-int _close_r(void* reent, int fd);
+int _close_r(struct _reent* reent, int fd);
 
 //_lseek_r
 //A reentrant version of lseek. It takes a pointer to the global data block,
 //which holds errno.
-off_t _lseek_r(void* reent, int fd, off_t pos, int whence);
+off_t _lseek_r(struct _reent* reent, int fd, off_t pos, int whence);
 
 //_read_r
 //A reentrant version of read. It takes a pointer to the global data block,
 //which holds errno.
-long _read_r(void* reent, int fd, void* buf, size_t cnt);
+_ssize_t _read_r(struct _reent* reent, int fd, void* buf, size_t cnt);
 
 //_write_r
 //A reentrant version of write. It takes a pointer to the global data block,
 //which holds errno.
-long _write_r(void* reent, int fd, const void* buf, size_t cnt);
+_ssize_t _write_r(struct _reent* reent, int fd, const void* buf, size_t cnt);
 
 //_fork_r
 //A reentrant version of fork. It takes a pointer to the global data block,
 //which holds errno.
-int _fork_r(void* reent);
+int _fork_r(struct _reent* reent);
 
 //_wait_r
 //A reentrant version of wait. It takes a pointer to the global data block,
 //which holds errno.
-int _wait_r(void* reent, int* status);
+int _wait_r(struct _reent* reent, int* status);
 
 //_stat_r
 //A reentrant version of stat. It takes a pointer to the global data block,
 //which holds errno.
-int _stat_r(void* reent, const char* file, struct stat* pstat);
+int _stat_r(struct _reent* reent, const char* file, struct stat* pstat);
 
 //_fstat_r
 //A reentrant version of fstat. It takes a pointer to the global data block,
 //which holds errno.
-int _fstat_r(void* reent, int fd, struct stat* pstat);
+int _fstat_r(struct _reent* reent, int fd, struct stat* pstat);
 
 //_link_r
 //A reentrant version of link. It takes a pointer to the global data block,
 //which holds errno.
-int _link_r(void* reent, const char* old, const char* new);
+int _link_r(struct _reent* reent, const char* __path1, const char* __path2);
 
 //_unlink_r
 //A reentrant version of unlink. It takes a pointer to the global data block,
 //which holds errno.
-int _unlink_r(void* reent, const char* file);
+int _unlink_r(struct _reent* reent, const char* file);
 
 //_sbrk_r
 //A reentrant version of sbrk. It takes a pointer to the global data block,
 //which holds errno.
-char* _sbrk_r(void* reent, size_t incr);
+void* _sbrk_r(struct _reent* reent, ptrdiff_t incr);
 
 
 #endif

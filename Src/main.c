@@ -54,6 +54,11 @@
 #include "usb_device.h"
 
 /* USER CODE BEGIN Includes */
+#include <fcntl.h>
+
+#include "usbd_cdc.h"	//just for the XXX_USBCDC_PresenceHack()
+
+#include "newlib/newlib_device.h"
 
 #include "system_interfaces.h"
 #include "serial_devices.h"
@@ -150,6 +155,23 @@ void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN 0 */
 
+void led_pwr_off()
+{
+	HAL_GPIO_WritePin(PWR_LED_OFF_GPIO_Port, PWR_LED_OFF_Pin, GPIO_PIN_RESET);
+}
+void led_pwr_on()
+{
+	HAL_GPIO_WritePin(PWR_LED_OFF_GPIO_Port, PWR_LED_OFF_Pin, GPIO_PIN_SET);
+}
+void led_blu_off()
+{
+	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+}
+void led_blu_on()
+{
+	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+}
+
 /* USER CODE END 0 */
 
 int main(void)
@@ -213,6 +235,13 @@ int main(void)
   MX_USART6_UART_Init();
 
   /* USER CODE BEGIN 2 */
+	//dummy alloc to cause FreeRTOS to initialize heap
+	volatile uint8_t* pvDummy = (uint8_t*) malloc ( 10 );
+	memset ( (uint8_t*)pvDummy, 0xa5, 10 );
+	free ( (void*)pvDummy );
+
+	// Initialize device manager
+	//XXX this is static and const, but the devices themselves may need initing
 
   /* USER CODE END 2 */
 
@@ -230,7 +259,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 1024);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -626,7 +655,7 @@ void StartDefaultTask(void const * argument)
 
 	//get our serial ports initialized
 	UART6_Init();		//UART 6 == 'COM1'
-	//USBCDC_Init();
+	USBCDC_Init();		//CDC == 
 
 
 	volatile UBaseType_t uxMinFreeStack;
@@ -642,6 +671,39 @@ void StartDefaultTask(void const * argument)
 	uxMaxSizeHeap = (char*)platform_get_last_free_ram( 0 ) - (char*)platform_get_first_free_ram( 0 );
 #endif
 
+	//crank up the system; especially for the newlib bottom edge support
+	if ( 1 )
+	{
+		//open ttys0, and redirect stdin/stdout to it; redirect stderr into stdout
+//		int hTtyS0 = 0;
+		int hTtyS0 = open ( "/ttys0/xxx", O_RDONLY );	//XXX haque, need to fix the dm lookup
+		char achFName[64];
+		sprintf ( achFName, "/std/%d=%d", STDIN_FILENO, hTtyS0 );	//stdin
+		int hStdin = open ( achFName, O_RDONLY );
+		sprintf ( achFName, "/std/%d=%d", STDOUT_FILENO, hTtyS0 );	//stdout
+		int hStdout = open ( achFName, O_RDONLY );
+		sprintf ( achFName, "/std/%d=%d", STDERR_FILENO, STDOUT_FILENO );	//stderr
+		int hStderr = open ( achFName, O_RDONLY );
+	}
+
+	if ( 1 )
+	{
+		char achBuff[128];
+		int nEof;
+		while ( ! ( nEof = feof ( stdin ) ) )
+		{
+			char* pchRet = fgets ( achBuff, sizeof(achBuff), stdin );
+			if ( NULL != pchRet )
+			{
+				int nPutRet;
+				nPutRet = fputs ( ">>", stdout );
+				nPutRet = fputs ( achBuff, stdout );
+				nPutRet = fputs ( "\n", stdout );
+				fflush ( stdout );
+			}
+		}
+	}
+	
 //
 {
 #if 0
@@ -663,7 +725,7 @@ void StartDefaultTask(void const * argument)
 	}
 #else
 	extern int luashell_main(void);
-	luashell_main();
+//	luashell_main();
 #endif
 }
 
