@@ -58,7 +58,8 @@
 
 #include "usbd_cdc.h"	//just for the XXX_USBCDC_PresenceHack()
 
-#include "newlib/newlib_device.h"
+//XXX abandoning newlib approach
+//#include "newlib/newlib_device.h"
 
 #include "system_interfaces.h"
 #include "serial_devices.h"
@@ -133,6 +134,10 @@ UART_HandleTypeDef huart6;
 osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
+//spi3 == sd card
+//spi1 == enc28j60
+
+
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE END PV */
@@ -170,6 +175,14 @@ void led_blu_off()
 void led_blu_on()
 {
 	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+}
+
+void switch1_read()
+{
+	//normally low
+//XXX III
+//GPIO_PIN_RESET
+	HAL_GPIO_ReadPin(SWITCH1_B_GPIO_Port, SWITCH1_B_Pin);
 }
 
 /* USER CODE END 0 */
@@ -640,6 +653,104 @@ void vApplicationMallocFailedHook(void)
 
 
 
+char buffer[100];
+
+void myprintf(const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+
+	int len = strlen(buffer);
+	HAL_UART_Transmit(&huart6, (uint8_t*)buffer, len, 1000);
+}
+
+
+
+
+void __filesystem_test ( void )
+{
+	FRESULT fres;
+
+	//Mount drive
+	fres = f_mount(&USERFatFS, "", 1); //1=mount now
+	if (fres != FR_OK)
+	{
+		myprintf("f_mount error (%i)\r\n", fres);
+		return;
+	}
+
+	DWORD free_clusters, free_sectors, total_sectors;
+	FATFS* getFreeFs;
+	fres = f_getfree("", &free_clusters, &getFreeFs);
+	if (fres != FR_OK)
+	{
+		myprintf("f_getfree error (%i)\r\n", fres);
+		return;
+	}
+
+	total_sectors = (getFreeFs->n_fatent - 2) * getFreeFs->csize;
+	free_sectors = free_clusters * getFreeFs->csize;
+
+	myprintf("SD card stats:\r\n%10lu KiB total drive space.\r\n%10lu KiB available.\r\n", total_sectors / 2, free_sectors / 2);
+
+	//Try to open file
+	fres = f_open(&USERFile, "test.txt", FA_READ);
+	if (fres != FR_OK)
+	{
+		myprintf("f_open error (%i)\r\n");
+		return;
+	}
+	myprintf("I was able to open 'test.txt' for reading!\r\n");
+
+	BYTE readBuf[30];
+
+	//We can either use f_read OR f_gets to get data out of files
+	//f_gets is a wrapper on f_read that does some string formatting for us
+	TCHAR* rres = f_gets((TCHAR*)readBuf, 30, &USERFile);
+	if(rres != 0)
+	{
+		myprintf("Read string from 'test.txt' contents: %s\r\n", readBuf);
+	}
+	else
+	{
+		myprintf("f_gets error (%i)\r\n", fres);
+	}
+
+	//Close file, don't forget this!
+	f_close(&USERFile);
+
+	fres = f_open(&USERFile, "write.txt", FA_WRITE | FA_OPEN_ALWAYS | FA_CREATE_ALWAYS);
+	if(fres == FR_OK)
+	{
+		myprintf("I was able to open 'write.txt' for writing\r\n");
+	}
+	else
+	{
+		myprintf("f_open error (%i)\r\n", fres);
+	}
+
+	strncpy((char*)readBuf, "a new file is made!", 19);
+	UINT bytesWrote; 
+	fres = f_write(&USERFile, readBuf, 19, &bytesWrote);
+	if(fres == FR_OK)
+	{
+		myprintf("Wrote %i bytes to 'write.txt'!\r\n", bytesWrote);
+	}
+	else
+	{
+		myprintf("f_write error (%i)\r\n");
+	}
+
+	//Close file, don't forget this!
+	f_close(&USERFile);
+
+	//De-mount drive
+	f_mount(NULL, "", 0);
+}
+
+
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
@@ -652,6 +763,52 @@ void StartDefaultTask(void const * argument)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 5 */
+
+	__filesystem_test();
+
+#if 0
+#define FCLK_SLOW() { \
+	__HAL_SPI_DISABLE(&hspi3); \
+	uint16_t nReg = READ_REG(hspi3.Instance->CR1); \
+	nReg &= ~ (7<<3); \
+	nReg |= SPI_BAUDRATEPRESCALER_128; \
+	WRITE_REG(hspi3.Instance->CR1, nReg ); \
+	__HAL_SPI_ENABLE(&hspi3); \
+}
+#define FCLK_FAST() { \
+	__HAL_SPI_DISABLE(&hspi3);	\
+	uint16_t nReg = READ_REG(hspi3.Instance->CR1);	\
+	nReg &= ~ (7<<3);	\
+	nReg |= SPI_BAUDRATEPRESCALER_2;	\
+	WRITE_REG(hspi3.Instance->CR1, nReg );	\
+	__HAL_SPI_ENABLE(&hspi3);	\
+}
+#define CS_HIGH()	{HAL_GPIO_WritePin(MICROSD_CS_GPIO_Port, MICROSD_CS_Pin, GPIO_PIN_SET);}
+#define CS_LOW()	{HAL_GPIO_WritePin(MICROSD_CS_GPIO_Port, MICROSD_CS_Pin, GPIO_PIN_RESET);}
+
+	//FCLK_SLOW();
+	FCLK_FAST();
+	while ( 1 )
+	{
+		HAL_StatusTypeDef hret;
+		CS_LOW();
+		led_blu_on();
+		for ( int i = 0; i < 1000; ++i )
+		{
+			BYTE txDat = 0xf0;
+			BYTE rxDat;
+			hret = HAL_SPI_TransmitReceive(&hspi3, &txDat, &rxDat, 1, 50);
+		}
+		CS_HIGH();
+		led_blu_off();
+		for ( int i = 0; i < 1000; ++i )
+		{
+			BYTE txDat = 0xcc;
+			BYTE rxDat;
+			hret = HAL_SPI_TransmitReceive(&hspi3, &txDat, &rxDat, 1, 50);
+		}
+	}
+#endif
 
 	//get our serial ports initialized
 	UART6_Init();		//UART 6 == 'COM1'
@@ -671,6 +828,7 @@ void StartDefaultTask(void const * argument)
 	uxMaxSizeHeap = (char*)platform_get_last_free_ram( 0 ) - (char*)platform_get_first_free_ram( 0 );
 #endif
 
+/*//XXX abandoning newlib approach
 	//crank up the system; especially for the newlib bottom edge support
 	if ( 1 )
 	{
@@ -685,7 +843,9 @@ void StartDefaultTask(void const * argument)
 		sprintf ( achFName, "/std/%d=%d", STDERR_FILENO, STDOUT_FILENO );	//stderr
 		int hStderr = open ( achFName, O_RDONLY );
 	}
+*/
 
+/*//XXX abandoning newlib approach
 	if ( 1 )
 	{
 		char achBuff[128];
@@ -703,7 +863,8 @@ void StartDefaultTask(void const * argument)
 			}
 		}
 	}
-	
+*/
+
 //
 {
 #if 0
@@ -739,13 +900,15 @@ void StartDefaultTask(void const * argument)
 	uxMinFreeHeap = (char*)platform_get_last_free_ram( 0 ) - heap_ptr;
 #endif
 
-	printf ( "minfreestack: %lu words; maxheapused: %lu of %lu (minfree %lu)\n",
-			uxMinFreeStack, uxMaxUsedHeap, uxMaxSizeHeap, uxMinFreeHeap );
+	//XXX abandoning newlib approach
+	//printf ( "minfreestack: %lu words; maxheapused: %lu of %lu (minfree %lu)\n",
+	//		uxMinFreeStack, uxMaxUsedHeap, uxMaxSizeHeap, uxMinFreeHeap );
 
 	//heapwalk
 	//vPortHeapWalk ( cbkHeapWalk );
 
-	printf ( "resetting...\n" );
+	//XXX abandoning newlib approach
+	//printf ( "resetting...\n" );
 	osDelay ( 500 );	//delay a little to let all that go out before we reset
 	NVIC_SystemReset();
 
