@@ -114,7 +114,7 @@ DSTATUS USER_initialize (
     return USER_SPI_initialize(pdrv);
   /* USER CODE END INIT */
 }
-
+ 
 /**
   * @brief  Gets Disk Status 
   * @param  pdrv: Physical drive number (0..)
