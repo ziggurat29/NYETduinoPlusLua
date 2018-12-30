@@ -162,6 +162,7 @@ void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN 0 */
 
+
 void led_pwr_off()
 {
 	HAL_GPIO_WritePin(PWR_LED_OFF_GPIO_Port, PWR_LED_OFF_Pin, GPIO_PIN_RESET);
@@ -170,6 +171,7 @@ void led_pwr_on()
 {
 	HAL_GPIO_WritePin(PWR_LED_OFF_GPIO_Port, PWR_LED_OFF_Pin, GPIO_PIN_SET);
 }
+
 void led_blu_off()
 {
 	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
@@ -179,13 +181,86 @@ void led_blu_on()
 	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 }
 
-void switch1_read()
+
+
+int switch1_read()
 {
-	//normally low
-//XXX III
-//GPIO_PIN_RESET
-	HAL_GPIO_ReadPin(SWITCH1_B_GPIO_Port, SWITCH1_B_Pin);
+	//pressed = high
+	return GPIO_PIN_SET == HAL_GPIO_ReadPin(SWITCH1_B_GPIO_Port, SWITCH1_B_Pin);
 }
+
+
+
+int sd_cardpresent_read()
+{
+	//inserted == low
+	return GPIO_PIN_RESET == HAL_GPIO_ReadPin(MICRO_SD_CARD_INSERTED_GPIO_Port, MICRO_SD_CARD_INSERTED_Pin);
+}
+
+void sd_cs_active()
+{	//active low
+	HAL_GPIO_WritePin(MICROSD_CS_GPIO_Port, MICROSD_CS_Pin, GPIO_PIN_RESET);
+}
+void sd_cs_inactive()
+{	//active low
+	HAL_GPIO_WritePin(MICROSD_CS_GPIO_Port, MICROSD_CS_Pin, GPIO_PIN_SET);
+}
+
+void sd_pwrctl_on()
+{	//active low
+	HAL_GPIO_WritePin(PWR_CTRL_MICROSD_GPIO_Port, PWR_CTRL_MICROSD_Pin, GPIO_PIN_RESET);
+}
+void sd_pwrctl_off()
+{	//active low
+	HAL_GPIO_WritePin(PWR_CTRL_MICROSD_GPIO_Port, PWR_CTRL_MICROSD_Pin, GPIO_PIN_SET);
+}
+
+
+
+int eth_int_read()
+{
+	//interrupt == low
+	return GPIO_PIN_RESET == HAL_GPIO_ReadPin(ENC_INT_GPIO_Port, ENC_INT_Pin);
+}
+
+void eth_cs_active()
+{	//active low
+	HAL_GPIO_WritePin(ENC_CS_GPIO_Port, ENC_CS_Pin, GPIO_PIN_RESET);
+}
+void eth_cs_inactive()
+{	//active low
+	HAL_GPIO_WritePin(ENC_CS_GPIO_Port, ENC_CS_Pin, GPIO_PIN_SET);
+}
+
+void eth_reset_active()
+{	//active low
+	HAL_GPIO_WritePin(ENC_RESET_GPIO_Port, ENC_RESET_Pin, GPIO_PIN_RESET);
+}
+void eth_reset_inactive()
+{	//active low
+	HAL_GPIO_WritePin(ENC_RESET_GPIO_Port, ENC_RESET_Pin, GPIO_PIN_SET);
+}
+
+void eth_pwrctl_on()
+{	//active low
+	HAL_GPIO_WritePin(PWR_CTRL_ETHERNET_GPIO_Port, PWR_CTRL_ETHERNET_Pin, GPIO_PIN_RESET);
+}
+void eth_pwrctl_off()
+{	//active low
+	HAL_GPIO_WritePin(PWR_CTRL_ETHERNET_GPIO_Port, PWR_CTRL_ETHERNET_Pin, GPIO_PIN_SET);
+}
+
+
+void headers_pwrctl_on()
+{	//active high
+	HAL_GPIO_WritePin(CTRL_OF_PWR_HEADERS_GPIO_Port, CTRL_OF_PWR_HEADERS_Pin, GPIO_PIN_SET);
+}
+void headers_pwrctl_off()
+{	//active high
+	HAL_GPIO_WritePin(CTRL_OF_PWR_HEADERS_GPIO_Port, CTRL_OF_PWR_HEADERS_Pin, GPIO_PIN_RESET);
+}
+
+
 
 /* USER CODE END 0 */
 
@@ -528,16 +603,22 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, PWR_LED_OFF_Pin|PWR_CTRL_ETHERNET_Pin|ENC_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(PWR_LED_OFF_GPIO_Port, PWR_LED_OFF_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, MICROSD_CS_Pin|PWR_CTRL_MICROSD_Pin|CTRL_OF_PWR_HEADERS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, PWR_CTRL_ETHERNET_Pin|ENC_CS_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, MICROSD_CS_Pin|PWR_CTRL_MICROSD_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(CTRL_OF_PWR_HEADERS_GPIO_Port, CTRL_OF_PWR_HEADERS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(ENC_RESET_GPIO_Port, ENC_RESET_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(ENC_RESET_GPIO_Port, ENC_RESET_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : PWR_LED_OFF_Pin PWR_CTRL_ETHERNET_Pin ENC_CS_Pin */
   GPIO_InitStruct.Pin = PWR_LED_OFF_Pin|PWR_CTRL_ETHERNET_Pin|ENC_CS_Pin;
@@ -570,7 +651,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : ENC_INT_Pin */
   GPIO_InitStruct.Pin = ENC_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ENC_INT_GPIO_Port, &GPIO_InitStruct);
 
@@ -765,6 +846,11 @@ void StartDefaultTask(void const * argument)
   MX_FATFS_Init();
 
   /* USER CODE BEGIN 5 */
+
+	sd_pwrctl_off();
+	osDelay ( 500 );
+	sd_pwrctl_on();
+
 
 	__filesystem_test();
 
