@@ -8,9 +8,10 @@
 
 #ifndef lua_h
 #define lua_h
+#include "rtl_mods/rtl_mods.h"
 
-#include <stdarg.h>
-#include <stddef.h>
+#include C_HEADER_STDARG
+#include C_HEADER_STDDEF
 
 
 #include "luaconf.h"

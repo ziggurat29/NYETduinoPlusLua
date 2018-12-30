@@ -6,14 +6,15 @@
 
 #define lutf8lib_c
 #define LUA_LIB
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 #include "lprefix.h"
 
 
-#include <assert.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
+#include C_HEADER_ASSERT
+#include C_HEADER_LIMITS
+#include C_HEADER_STDLIB
+#include C_HEADER_STRING
 
 #include "lua.h"
 

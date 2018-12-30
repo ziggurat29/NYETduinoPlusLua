@@ -6,12 +6,13 @@
 
 #define lstate_c
 #define LUA_CORE
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 #include "lprefix.h"
 
 
-#include <stddef.h>
-#include <string.h>
+#include C_HEADER_STDDEF
+#include C_HEADER_STRING
 
 #include "lua.h"
 
@@ -42,7 +43,7 @@
 ** created; the seed is used to randomize hashes.
 */
 #if !defined(luai_makeseed)
-#include <time.h>
+#include C_HEADER_TIME
 #define luai_makeseed()		cast(unsigned int, time(NULL))
 #endif
 

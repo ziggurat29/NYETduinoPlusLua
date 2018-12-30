@@ -6,9 +6,10 @@
 
 #ifndef lmem_h
 #define lmem_h
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 
-#include <stddef.h>
+#include C_HEADER_STDDEF
 
 #include "llimits.h"
 #include "lua.h"

@@ -7,10 +7,10 @@
 
 #ifndef lauxlib_h
 #define lauxlib_h
+#include "rtl_mods/rtl_mods.h"
 
-
-#include <stddef.h>
-#include <stdio.h>
+//#include C_HEADER_STDDEF
+//#include C_HEADER_STDIO
 
 #include "lua.h"
 
@@ -191,7 +191,8 @@ LUALIB_API char *(luaL_buffinitsize) (lua_State *L, luaL_Buffer *B, size_t sz);
 
 
 typedef struct luaL_Stream {
-  FILE *f;  /* stream (NULL for incompletely created streams) */
+  //HHH changed from FILE* to void* to avoid hoisting in stdio.h
+  void *f;  /* stream (NULL for incompletely created streams) */
   lua_CFunction closef;  /* to close stream (NULL for closed streams) */
 } luaL_Stream;
 

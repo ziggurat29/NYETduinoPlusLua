@@ -6,10 +6,11 @@
 
 #ifndef llimits_h
 #define llimits_h
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 
-#include <limits.h>
-#include <stddef.h>
+#include C_HEADER_LIMITS
+#include C_HEADER_STDDEF
 
 
 #include "lua.h"

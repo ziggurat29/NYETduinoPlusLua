@@ -6,18 +6,19 @@
 
 #define lstrlib_c
 #define LUA_LIB
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 #include "lprefix.h"
 
 
-#include <ctype.h>
-#include <float.h>
-#include <limits.h>
-#include <locale.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include C_HEADER_CTYPE
+#include C_HEADER_FLOAT
+#include C_HEADER_LIMITS
+#include C_HEADER_LOCALE
+#include C_HEADER_STDDEF
+#include C_HEADER_STDIO
+#include C_HEADER_STDLIB
+#include C_HEADER_STRING
 
 #include "lua.h"
 
@@ -813,7 +814,7 @@ static int str_gsub (lua_State *L) {
 ** Hexadecimal floating-point formatter
 */
 
-#include <math.h>
+#include C_HEADER_MATH
 
 #define SIZELENMOD	(sizeof(LUA_NUMBER_FRMLEN)/sizeof(char))
 

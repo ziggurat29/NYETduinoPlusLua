@@ -6,12 +6,13 @@
 
 #define lcode_c
 #define LUA_CORE
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 #include "lprefix.h"
 
 
-#include <math.h>
-#include <stdlib.h>
+#include C_HEADER_MATH
+#include C_HEADER_STDLIB
 
 #include "lua.h"
 

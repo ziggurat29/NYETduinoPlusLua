@@ -6,12 +6,13 @@
 
 #define lapi_c
 #define LUA_CORE
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 #include "lprefix.h"
 
 
-#include <stdarg.h>
-#include <string.h>
+#include C_HEADER_STDARG
+#include C_HEADER_STRING
 
 #include "lua.h"
 

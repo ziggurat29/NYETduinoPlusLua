@@ -6,6 +6,7 @@
 
 #define ltable_c
 #define LUA_CORE
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 #include "lprefix.h"
 
@@ -23,8 +24,8 @@
 ** Hence even when the load factor reaches 100%, performance remains good.
 */
 
-#include <math.h>
-#include <limits.h>
+#include C_HEADER_MATH
+#include C_HEADER_LIMITS
 
 #include "lua.h"
 

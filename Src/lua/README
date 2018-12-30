@@ -1,12 +1,19 @@
 
-This is Lua 5.3.4, released on 12 Jan 2017.
+This is Lua 5.3.5, released on 26 Jun 2018.
 
 For installation instructions, license details, and
 further information about Lua, see doc/readme.html.
 
 //========================================================================
-I have modified this release as little as practically as possible for my
-embedded needs.
+I have modified this release by patching all #include <> to instead include
+via a name defined in rtl_mods.h.  This allows more easily 'shimming'
+implementations in that are more appropriate for an embedded environment than
+what the standard C library assumes.  The main areas where this must be done
+are in stdio.h and stdlib.h for all the FILE* stuff (since embedded usually
+has no file system or does via third party library), but also things like
+system, exit, and getenv, which have no meaning in embedded.
+
+Additionally:
 *  I dropped luac.c, which is a stand-alone executable, anyway
 *  I have modified lua.c, which is the 'main' module for the interactive
   interpreter.
@@ -14,5 +21,4 @@ embedded needs.
   invoking it from a FreeRTOS task, so it doesn't have the same sort of
   main() with arg, argv, etc.
   This probably will be replaced eventually (maybe), but it is useful for
-  now while I bring up the rest of the platform, especially the newlib
-  syscalls adaption and a serial channels for stdin/out/err.
+  now while I bring up the rest of the platform.

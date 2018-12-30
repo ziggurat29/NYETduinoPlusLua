@@ -6,16 +6,17 @@
 
 #define lobject_c
 #define LUA_CORE
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 #include "lprefix.h"
 
 
-#include <locale.h>
-#include <math.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include C_HEADER_LOCALE
+#include C_HEADER_MATH
+#include C_HEADER_STDARG
+#include C_HEADER_STDIO
+#include C_HEADER_STDLIB
+#include C_HEADER_STRING
 
 #include "lua.h"
 

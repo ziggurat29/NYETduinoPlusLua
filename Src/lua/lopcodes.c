@@ -6,11 +6,12 @@
 
 #define lopcodes_c
 #define LUA_CORE
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 #include "lprefix.h"
 
 
-#include <stddef.h>
+#include C_HEADER_STDDEF
 
 #include "lopcodes.h"
 

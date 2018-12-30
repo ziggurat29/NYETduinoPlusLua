@@ -6,15 +6,16 @@
 
 #define lvm_c
 #define LUA_CORE
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 #include "lprefix.h"
 
-#include <float.h>
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include C_HEADER_FLOAT
+#include C_HEADER_LIMITS
+#include C_HEADER_MATH
+#include C_HEADER_STDIO
+#include C_HEADER_STDLIB
+#include C_HEADER_STRING
 
 #include "lua.h"
 

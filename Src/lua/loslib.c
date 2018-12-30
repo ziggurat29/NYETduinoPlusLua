@@ -6,15 +6,18 @@
 
 #define loslib_c
 #define LUA_LIB
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 #include "lprefix.h"
 
 
-#include <errno.h>
-#include <locale.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include C_HEADER_LIMITS
+#include C_HEADER_ERRNO
+#include C_HEADER_LOCALE
+#include C_HEADER_STDLIB
+#include C_HEADER_STRING
+#include C_HEADER_TIME
+#include C_HEADER_STDIO
 
 #include "lua.h"
 
@@ -110,7 +113,7 @@ static time_t l_checktime (lua_State *L, int arg) {
 
 #if defined(LUA_USE_POSIX)	/* { */
 
-#include <unistd.h>
+#include C_HEADER_UNISTD
 
 #define LUA_TMPNAMBUFSIZE	32
 

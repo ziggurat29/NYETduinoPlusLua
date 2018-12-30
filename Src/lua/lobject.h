@@ -7,9 +7,10 @@
 
 #ifndef lobject_h
 #define lobject_h
+#include "rtl_mods/rtl_mods.h"	//(maybe put in lprefix.h)
 
 
-#include <stdarg.h>
+#include C_HEADER_STDARG
 
 
 #include "llimits.h"
